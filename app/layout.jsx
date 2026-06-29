@@ -4,6 +4,7 @@ import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 import SessionProviderWrapper from '@/components/SessionProviderWrapper';
 
+
 const inter = Inter({ subsets: ['latin'] });
 
 export const metadata = {
@@ -23,3 +24,5 @@ export default async function RootLayout({ children }) {
     </html>
   );
 }
+
+export const dynamic = 'force-dynamic';
