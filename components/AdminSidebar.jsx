@@ -4,7 +4,7 @@ import Image from 'next/image'; // ✅ import Image
 import { usePathname } from 'next/navigation';
 import { signOut } from 'next-auth/react';
 import { 
-  FaHome, FaList, FaUsers, FaBullseye, FaTicketAlt, FaCalendarAlt, FaFileAlt, FaSignOutAlt 
+  FaHome, FaList, FaUsers, FaBullseye, FaTicketAlt, FaCalendarAlt, FaFileAlt, FaSignOutAlt,FaGlobe, FaLocationArrow, 
 } from 'react-icons/fa';
 import { useRole } from '@/context/RoleContext';
 
@@ -20,6 +20,8 @@ export default function AdminSidebar() {
     { href: '/admin/assign-tickets', label: 'Assign Tickets', icon: FaTicketAlt },
     { href: '/admin/daily-update', label: 'Daily Update', icon: FaCalendarAlt },
     { href: '/admin/reports', label: 'Reports', icon: FaFileAlt },
+     { href: '/admin/regions', label: 'Regions', icon: FaGlobe },       
+  { href: '/admin/areas', label: 'Areas', icon: FaLocationArrow }, 
   ];
 
   const limitedLinks = [
