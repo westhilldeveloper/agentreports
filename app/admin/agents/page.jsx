@@ -79,7 +79,7 @@ export default function AgentsPage() {
 
   const handleChange = (e) => {
     const { name, value } = e.target;
-    setForm({ ...form, [name]: name === 'agent_code' ? value.toUpperCase() : value });
+    setForm({ ...form, [name]: name === 'agent_code' || 'agent_name' ? value.toUpperCase() : value });
   };
 
   const handleSubmit = async (e) => {

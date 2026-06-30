@@ -136,7 +136,7 @@ export default function ChitsPage() {
                 placeholder="e.g., Coin-5"
                 className="w-full border border-gray-200 rounded-lg px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
                 value={name}
-                onChange={(e) => setName(e.target.value)}
+                onChange={(e) => setName(e.target.value.toUpperCase())}
                 required
               />
             </div>
@@ -202,14 +202,19 @@ export default function ChitsPage() {
                       <td className="px-4 py-2.5 font-medium text-gray-800">{chit.id}</td>
                       <td className="px-4 py-2.5 text-gray-700">{chit.name}</td>
                       <td className="px-4 py-2.5 text-gray-700">{chit.total_tickets}</td>
-                      <td className="px-4 py-2.5 text-gray-700 flex items-center space-x-1">
-                        <FaClock className="w-3 h-3 text-gray-400" />
-                        <span>{new Date(chit.auction_date).toLocaleString('en-GB')}</span>
-                      </td>
-                      <td className="px-4 py-2.5 text-gray-500 flex items-center space-x-1">
-                        <FaCalendarAlt className="w-3 h-3 text-gray-400" />
-                        <span>{new Date(chit.created_at).toLocaleDateString('en-GB')}</span>
-                      </td>
+                      <td className="px-4 py-2.5 text-gray-700">
+  <div className="flex items-center space-x-1">
+    <FaClock className="w-3 h-3 text-gray-400" />
+    <span>{new Date(chit.auction_date).toLocaleString('en-GB')}</span>
+  </div>
+</td>
+
+<td className="px-4 py-2.5 text-gray-500">
+  <div className="flex items-center space-x-1">
+    <FaCalendarAlt className="w-3 h-3 text-gray-400" />
+    <span>{new Date(chit.created_at).toLocaleDateString('en-GB')}</span>
+  </div>
+</td>
                       <td className="px-4 py-2.5 text-center">
                         <div className="flex items-center justify-center space-x-2">
                           <button onClick={() => openEditModal(chit)} className="text-blue-600 hover:text-blue-800 transition p-1 rounded hover:bg-blue-50" title="Edit">

@@ -121,7 +121,7 @@ export default function AreasPage() {
         <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6 mb-8">
           <div className="flex flex-wrap items-end gap-4">
             {/* Filter */}
-            <div className="flex-1 min-w-[180px]">
+            <div className="flex-1 max-w-[180px]">
               <label className="block text-xs font-medium text-gray-500 uppercase tracking-wider mb-1.5">Filter by Region</label>
               <div className="relative">
                 <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
@@ -163,7 +163,7 @@ export default function AreasPage() {
                   placeholder="e.g., Downtown"
                   className="w-full border border-gray-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400 focus:border-transparent bg-gray-50"
                   value={form.name}
-                  onChange={(e) => setForm({ ...form, name: e.target.value })}
+                  onChange={(e) => setForm({ ...form, name: e.target.value.toUpperCase() })}
                   required
                 />
               </div>
