@@ -4,12 +4,14 @@ import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 import SessionProviderWrapper from '@/components/SessionProviderWrapper';
 
-
 const inter = Inter({ subsets: ['latin'] });
 
 export const metadata = {
   title: 'Coinplus - Chits & Kuries',
   description: 'Agent Performance Tracking System',
+  icons: {
+    icon: '/icon.png', // ✅ favicon from public folder
+  },
 };
 
 export default async function RootLayout({ children }) {

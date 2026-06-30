@@ -2,6 +2,7 @@
 import { use, useState, useEffect } from 'react';
 import { useSession, signOut } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
+import Image from 'next/image'; // ✅ import Image
 import {
   Chart as ChartJS,
   BarElement,
@@ -34,15 +35,14 @@ export default function AgentDashboard({ params }) {
   });
 
   useEffect(() => {
-  if (data && data.breakdown) {
-    const options = data.breakdown.map(b => ({ id: b.chitId, name: b.chitName }));
-    setChitOptions(options);
-    if (options.length > 0 && !selectedChitId) {
-      // Optionally set first chit as default
-      setSelectedChitId(options[0].id);
+    if (data && data.breakdown) {
+      const options = data.breakdown.map(b => ({ id: b.chitId, name: b.chitName }));
+      setChitOptions(options);
+      if (options.length > 0 && !selectedChitId) {
+        setSelectedChitId(options[0].id);
+      }
     }
-  }
-}, [data]);
+  }, [data]);
 
   useEffect(() => {
     if (session && session.user.id !== parseInt(id)) {
@@ -113,12 +113,12 @@ export default function AgentDashboard({ params }) {
     );
 
   const { 
-  summary = { totalTarget: 0, totalCollected: 0, totalPending: 0 }, 
-  breakdown = [], 
-  monthlyTrend = [], 
-  dailyTrend = [], 
-  history = [] 
-} = data;
+    summary = { totalTarget: 0, totalCollected: 0, totalPending: 0 }, 
+    breakdown = [], 
+    monthlyTrend = [], 
+    dailyTrend = [], 
+    history = [] 
+  } = data;
   const { totalTarget, totalCollected, totalPending } = summary;
 
   // Chart Data: Daily trend (bar chart)
@@ -158,7 +158,7 @@ export default function AgentDashboard({ params }) {
     datasets: [{ data: [totalCollected, totalPending], backgroundColor: ['#2563EB', '#DC2626'] }],
   };
 
-  // Monthly trend (previous months) – optional, we'll keep the bar chart for it
+  // Monthly trend (previous months) – optional
   const trendLabels = monthlyTrend.map((t) => t.month_label);
   const trendCollected = monthlyTrend.map((t) => t.total_collected);
   const trendPending = monthlyTrend.map((t) => t.total_pending);
@@ -176,7 +176,7 @@ export default function AgentDashboard({ params }) {
     b.tickets.map((t) => ({
       chitName: b.chitName,
       ticketNumber: t.ticketNumber,
-       auctionDate: b.auctionDate,
+      auctionDate: b.auctionDate,
       target: t.target,
       collected: t.collected,
       pending: t.pending,
@@ -190,6 +190,15 @@ export default function AgentDashboard({ params }) {
       <header className="bg-white border-b border-gray-200 shadow-sm sticky top-0 z-10">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-14 flex items-center justify-between">
           <div className="flex items-center space-x-2">
+            {/* ✅ Logo added here */}
+            <Image 
+              src="/fn_logo.png" 
+              alt="Coinplus Logo" 
+              width={32} 
+              height={32} 
+              className="rounded"
+              priority
+            />
             <span className="text-xl font-bold text-blue-700">Chit</span>
             <span className="text-xl font-light text-gray-600">Manager</span>
           </div>
@@ -266,7 +275,7 @@ export default function AgentDashboard({ params }) {
           </div>
         </div>
 
-        {/* Charts Row: Daily Trend (new) + Doughnut */}
+        {/* Charts Row: Daily Trend + Doughnut */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 mb-6">
           <div className="bg-white rounded-lg shadow-sm p-4 border border-gray-100">
             <h3 className="text-sm font-semibold text-gray-800 mb-3">Daily Collection Trend</h3>
@@ -301,8 +310,6 @@ export default function AgentDashboard({ params }) {
           </div>
         </div>
 
-       
-
         {/* Detailed Breakdown Table */}
         <div className="bg-white rounded-lg shadow-sm border border-gray-100 overflow-hidden">
           <div className="px-4 py-3 border-b border-gray-100">
@@ -314,8 +321,7 @@ export default function AgentDashboard({ params }) {
                 <tr>
                   <th className="px-4 py-2 text-left">Chit</th>
                   <th className="px-4 py-2 text-left">Ticket</th>
-                  
-           <th className="px-4 py-2 text-left">Auction Date</th> 
+                  <th className="px-4 py-2 text-left">Auction Date</th>
                   <th className="px-4 py-2 text-right">Target (₹)</th>
                   <th className="px-4 py-2 text-right">Collected (₹)</th>
                   <th className="px-4 py-2 text-right">Pending (₹)</th>
@@ -331,31 +337,34 @@ export default function AgentDashboard({ params }) {
                   </tr>
                 ) : (
                   ticketDetails.map((t, idx) => (
-  <tr key={idx} className="hover:bg-gray-50 transition">
-    <td className="px-4 py-2.5 font-medium text-gray-800">{t.chitName}</td>
-    <td className="px-4 py-2.5 text-gray-600">Token {t.ticketNumber}</td>
-    <td className="px-4 py-2.5 text-gray-600">
-      {t.auctionDate ? new Date(t.auctionDate).toLocaleString('en-GB', {
-        day: '2-digit',
-        month: 'short',
-        year: 'numeric',
-        hour: '2-digit',
-        minute: '2-digit'
-      }) : '-'}
-    </td>
-    <td className="px-4 py-2.5 text-right text-gray-600">₹{t.target.toLocaleString()}</td>
-    <td className="px-4 py-2.5 text-right text-green-600 font-medium">₹{t.collected.toLocaleString()}</td>
-    <td className="px-4 py-2.5 text-right text-red-600 font-medium">₹{t.pending.toLocaleString()}</td>
-    <td className="px-4 py-2.5">
-      <div className="flex items-center justify-end gap-2">
-        <div className="w-20 bg-gray-200 rounded-full h-1.5">
-          <div className="bg-blue-600 h-1.5 rounded-full transition-all duration-300" style={{ width: `${t.progress}%` }}></div>
-        </div>
-        <span className="text-xs font-medium text-gray-600 w-8 text-right">{t.progress}%</span>
-      </div>
-    </td>
-  </tr>
-))
+                    <tr key={idx} className="hover:bg-gray-50 transition">
+                      <td className="px-4 py-2.5 font-medium text-gray-800">{t.chitName}</td>
+                      <td className="px-4 py-2.5 text-gray-600">Token {t.ticketNumber}</td>
+                      <td className="px-4 py-2.5 text-gray-600">
+                        {t.auctionDate ? new Date(t.auctionDate).toLocaleString('en-GB', {
+                          day: '2-digit',
+                          month: 'short',
+                          year: 'numeric',
+                          hour: '2-digit',
+                          minute: '2-digit'
+                        }) : '-'}
+                      </td>
+                      <td className="px-4 py-2.5 text-right text-gray-600">₹{t.target.toLocaleString()}</td>
+                      <td className="px-4 py-2.5 text-right text-green-600 font-medium">₹{t.collected.toLocaleString()}</td>
+                      <td className="px-4 py-2.5 text-right text-red-600 font-medium">₹{t.pending.toLocaleString()}</td>
+                      <td className="px-4 py-2.5">
+                        <div className="flex items-center justify-end gap-2">
+                          <div className="w-20 bg-gray-200 rounded-full h-1.5">
+                            <div
+                              className="bg-blue-600 h-1.5 rounded-full transition-all duration-300"
+                              style={{ width: `${t.progress}%` }}
+                            ></div>
+                          </div>
+                          <span className="text-xs font-medium text-gray-600 w-8 text-right">{t.progress}%</span>
+                        </div>
+                      </td>
+                    </tr>
+                  ))
                 )}
               </tbody>
             </table>
@@ -363,53 +372,53 @@ export default function AgentDashboard({ params }) {
         </div>
 
         {/* Monthly Statement */}
-<div className="bg-white rounded-lg shadow-sm border border-gray-100 overflow-hidden mt-6">
-  <div className="px-4 py-3 border-b border-gray-100 flex items-center justify-between">
-    <div>
-      <h3 className="text-sm font-semibold text-gray-800">Monthly Statement</h3>
-      <p className="text-xs text-gray-500">Transaction history for the selected month</p>
-    </div>
-    <span className="text-xs text-gray-500">{history.length} transactions</span>
-  </div>
-  <div className="overflow-x-auto">
-    <table className="w-full text-xs">
-      <thead className="bg-gray-50 text-gray-600 uppercase tracking-wider">
-        <tr>
-          <th className="px-4 py-2 text-left">Date</th>
-          <th className="px-4 py-2 text-left">Chit</th>
-          <th className="px-4 py-2 text-left">Ticket</th>
-          <th className="px-4 py-2 text-right">Collected (₹)</th>
-          <th className="px-4 py-2 text-right">Balance (₹)</th>
-        </tr>
-      </thead>
-      <tbody className="divide-y divide-gray-100">
-        {history.length === 0 ? (
-          <tr>
-            <td colSpan="5" className="px-4 py-3 text-center text-gray-400 text-xs">
-              No transactions for this month.
-            </td>
-          </tr>
-        ) : (
-          history.map((h, idx) => (
-            <tr key={idx} className="hover:bg-gray-50 transition">
-              <td className="px-4 py-2.5 text-gray-700">
-                {new Date(h.date).toLocaleDateString('en-GB', { day: '2-digit', month: 'short' })}
-              </td>
-              <td className="px-4 py-2.5 text-gray-700">{h.chit_name}</td>
-              <td className="px-4 py-2.5 text-gray-700">Token {h.ticket_number}</td>
-             <td className="px-4 py-2.5 text-right text-green-600 font-medium">
-  ₹{parseFloat(h.daily_collected).toLocaleString()}
-</td>
-<td className="px-4 py-2.5 text-right text-red-600 font-medium">
-  ₹{parseFloat(h.balance).toLocaleString()}
-</td>
-            </tr>
-          ))
-        )}
-      </tbody>
-    </table>
-  </div>
-</div>
+        <div className="bg-white rounded-lg shadow-sm border border-gray-100 overflow-hidden mt-6">
+          <div className="px-4 py-3 border-b border-gray-100 flex items-center justify-between">
+            <div>
+              <h3 className="text-sm font-semibold text-gray-800">Monthly Statement</h3>
+              <p className="text-xs text-gray-500">Transaction history for the selected month</p>
+            </div>
+            <span className="text-xs text-gray-500">{history.length} transactions</span>
+          </div>
+          <div className="overflow-x-auto">
+            <table className="w-full text-xs">
+              <thead className="bg-gray-50 text-gray-600 uppercase tracking-wider">
+                <tr>
+                  <th className="px-4 py-2 text-left">Date</th>
+                  <th className="px-4 py-2 text-left">Chit</th>
+                  <th className="px-4 py-2 text-left">Ticket</th>
+                  <th className="px-4 py-2 text-right">Collected (₹)</th>
+                  <th className="px-4 py-2 text-right">Balance (₹)</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-gray-100">
+                {history.length === 0 ? (
+                  <tr>
+                    <td colSpan="5" className="px-4 py-3 text-center text-gray-400 text-xs">
+                      No transactions for this month.
+                    </td>
+                  </tr>
+                ) : (
+                  history.map((h, idx) => (
+                    <tr key={idx} className="hover:bg-gray-50 transition">
+                      <td className="px-4 py-2.5 text-gray-700">
+                        {new Date(h.date).toLocaleDateString('en-GB', { day: '2-digit', month: 'short' })}
+                      </td>
+                      <td className="px-4 py-2.5 text-gray-700">{h.chit_name}</td>
+                      <td className="px-4 py-2.5 text-gray-700">Token {h.ticket_number}</td>
+                      <td className="px-4 py-2.5 text-right text-green-600 font-medium">
+                        ₹{parseFloat(h.daily_collected).toLocaleString()}
+                      </td>
+                      <td className="px-4 py-2.5 text-right text-red-600 font-medium">
+                        ₹{parseFloat(h.balance).toLocaleString()}
+                      </td>
+                    </tr>
+                  ))
+                )}
+              </tbody>
+            </table>
+          </div>
+        </div>
 
         {/* Footer */}
         <footer className="mt-10 border-t border-gray-200 pt-4 text-center text-xs text-gray-400">

@@ -1,5 +1,6 @@
 'use client';
 import Link from 'next/link';
+import Image from 'next/image'; // ✅ import Image
 import { usePathname } from 'next/navigation';
 import { signOut } from 'next-auth/react';
 import { 
@@ -9,8 +10,7 @@ import { useRole } from '@/context/RoleContext';
 
 export default function AdminSidebar() {
   const pathname = usePathname();
-  const { role } = useRole();
-  const { isFullAdmin } = useRole();
+  const { role, isFullAdmin } = useRole(); // ✅ combined destructuring
 
   const allLinks = [
     { href: '/admin', label: 'Dashboard', icon: FaHome },
@@ -21,12 +21,8 @@ export default function AdminSidebar() {
     { href: '/admin/daily-update', label: 'Daily Update', icon: FaCalendarAlt },
     { href: '/admin/reports', label: 'Reports', icon: FaFileAlt },
   ];
-const limitedLinks = [
-  { href: '/admin', label: 'Dashboard', icon: FaHome },
-  { href: '/admin/reports', label: 'Reports', icon: FaFileAlt },
-];
-  // Manager sees only Reports and Dashboard (optional)
-  const managerLinks = [
+
+  const limitedLinks = [
     { href: '/admin', label: 'Dashboard', icon: FaHome },
     { href: '/admin/reports', label: 'Reports', icon: FaFileAlt },
   ];
@@ -35,9 +31,20 @@ const limitedLinks = [
 
   return (
     <aside className="w-64 bg-gray-800 text-white h-screen p-4 fixed">
-      <h1 className="text-2xl font-bold mb-8">
-        Coinplus {role === 'manager' ? 'Manager' : 'Admin'}
-      </h1>
+      {/* Logo + Title */}
+      <div className="flex items-center space-x-3 mb-8">
+        <Image 
+          src="/fn_logo.png" 
+          alt="Coinplus Logo" 
+          width={62} 
+          height={62} 
+          className="rounded"
+          priority
+        />
+        <h1 className="text-sm font-bold">
+          Coinplus {role === 'manager' ? 'Manager' : 'Admin'}
+        </h1>
+      </div>
       <nav className="space-y-2">
         {links.map((link) => {
           const Icon = link.icon;
