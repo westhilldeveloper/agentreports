@@ -21,19 +21,19 @@ export async function GET(req, { params }) {
 
     // 1. Get tickets (optionally filtered by chit)
     let ticketsQuery = sql`
-      SELECT at.id as agent_ticket_id, at.ticket_number, c.id as chit_id, c.name as chit_name
-      FROM agent_tickets at
-      JOIN chits c ON at.chit_id = c.id
-      WHERE at.agent_id = ${agentId}
-    `;
-    if (chitId) {
-      ticketsQuery = sql`
-        SELECT at.id as agent_ticket_id, at.ticket_number, c.id as chit_id, c.name as chit_name
-        FROM agent_tickets at
-        JOIN chits c ON at.chit_id = c.id
-        WHERE at.agent_id = ${agentId} AND at.chit_id = ${chitId}
-      `;
-    }
+  SELECT at.id as agent_ticket_id, at.ticket_number, c.id as chit_id, c.name as chit_name, c.auction_date
+  FROM agent_tickets at
+  JOIN chits c ON at.chit_id = c.id
+  WHERE at.agent_id = ${agentId}
+`;
+if (chitId) {
+  ticketsQuery = sql`
+    SELECT at.id as agent_ticket_id, at.ticket_number, c.id as chit_id, c.name as chit_name, c.auction_date
+    FROM agent_tickets at
+    JOIN chits c ON at.chit_id = c.id
+    WHERE at.agent_id = ${agentId} AND at.chit_id = ${chitId}
+  `;
+}
     const tickets = await ticketsQuery;
 
     if (tickets.length === 0) {
@@ -97,6 +97,7 @@ export async function GET(req, { params }) {
         breakdownMap[chitKey] = {
           chitId: ticket.chit_id,
           chitName: chitKey,
+          auctionDate: ticket.auction_date,
           target: 0,
           collected: 0,
           pending: 0,

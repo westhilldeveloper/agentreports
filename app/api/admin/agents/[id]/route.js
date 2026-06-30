@@ -5,36 +5,28 @@ import { NextResponse } from 'next/server';
 export async function PUT(req, { params }) {
   try {
     const { id } = await params;
-    const { agent_code, name, phone, email } = await req.json();
+    const { agent_code, name, phone, email, region_id, area_id } = await req.json();
 
     if (!agent_code || !name || !phone || !email) {
-      return NextResponse.json(
-        { success: false, message: 'All fields are required' },
-        { status: 400 }
-      );
+      return NextResponse.json({ success: false, message: 'All fields are required' }, { status: 400 });
     }
 
     const result = await sql`
       UPDATE agents 
-      SET agent_code = ${agent_code}, name = ${name}, phone = ${phone}, email = ${email}
+      SET agent_code = ${agent_code}, name = ${name}, phone = ${phone}, email = ${email},
+          region_id = ${region_id || null}, area_id = ${area_id || null}
       WHERE id = ${id}
       RETURNING *
     `;
 
     if (result.length === 0) {
-      return NextResponse.json(
-        { success: false, message: 'Agent not found' },
-        { status: 404 }
-      );
+      return NextResponse.json({ success: false, message: 'Agent not found' }, { status: 404 });
     }
 
     return NextResponse.json({ success: true, data: result[0] });
   } catch (error) {
     console.error('Update Agent Error:', error);
-    return NextResponse.json(
-      { success: false, message: 'Failed to update agent' },
-      { status: 500 }
-    );
+    return NextResponse.json({ success: false, message: 'Failed to update agent' }, { status: 500 });
   }
 }
 

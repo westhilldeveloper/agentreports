@@ -10,6 +10,7 @@ import {
   FaTicketAlt,
   FaCalendarAlt,
   FaSignOutAlt,
+  
 } from 'react-icons/fa';
 
 export default function AdminSidebar({ isOpen, onClose }) {
@@ -22,6 +23,10 @@ export default function AdminSidebar({ isOpen, onClose }) {
     { href: '/admin/targets', label: 'Monthly Targets', icon: FaBullseye },
     { href: '/admin/assign-tickets', label: 'Assign Tickets', icon: FaTicketAlt },
     { href: '/admin/daily-update', label: 'Daily Update', icon: FaCalendarAlt },
+    { href: '/admin/reports', label: 'Reports', icon: FaCalendarAlt },
+    { href: '/admin/regions', label: 'Regions', icon: FaCalendarAlt  },
+{ href: '/admin/areas', label: 'Areas', icon: FaCalendarAlt  },
+    
   ];
 
   return (

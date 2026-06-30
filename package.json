@@ -11,14 +11,18 @@
   "dependencies": {
     "chart.js": "^4.5.1",
     "date-fns": "^4.4.0",
+    "jspdf": "^4.2.1",
+    "jspdf-autotable": "^5.0.8",
     "next": "16.2.9",
     "next-auth": "^4.24.14",
     "nodemailer": "^7.0.13",
+    "pdfmake": "^0.3.11",
     "react": "19.2.4",
     "react-chartjs-2": "^5.3.1",
     "react-dom": "19.2.4",
     "react-hook-form": "^7.80.0",
-    "react-icons": "^5.6.0"
+    "react-icons": "^5.6.0",
+    "xlsx": "^0.18.5"
   },
   "devDependencies": {
     "@neondatabase/serverless": "^1.1.0",
@@ -30,7 +34,7 @@
     "eslint-config-next": "16.2.9",
     "tailwindcss": "^4"
   },
-   "overrides": {
+  "overrides": {
     "uuid": "^11.0.0"
   }
 }

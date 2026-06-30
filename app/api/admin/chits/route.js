@@ -13,14 +13,17 @@ export async function GET() {
 
 export async function POST(req) {
   try {
-    const { name, total_tickets } = await req.json();
-    if (!name || !total_tickets) {
-      return NextResponse.json({ success: false, message: 'Name and total tickets are required' }, { status: 400 });
+    const { name, total_tickets, auction_date } = await req.json();
+    if (!name || !total_tickets || !auction_date) {
+      return NextResponse.json(
+        { success: false, message: 'Name, total tickets, and auction date are required' },
+        { status: 400 }
+      );
     }
 
     const result = await sql`
-      INSERT INTO chits (name, total_tickets) 
-      VALUES (${name}, ${total_tickets}) 
+      INSERT INTO chits (name, total_tickets, auction_date) 
+      VALUES (${name}, ${total_tickets}, ${auction_date}) 
       RETURNING *
     `;
     return NextResponse.json({ success: true, data: result[0] });

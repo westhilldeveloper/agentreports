@@ -1,16 +1,35 @@
 'use client';
 import { useState, useEffect } from 'react';
-import { FaUserPlus, FaUser, FaPhone, FaEnvelope, FaIdBadge, FaEdit, FaTrash, FaTimes } from 'react-icons/fa';
+import { FaUserPlus, FaUser, FaPhone, FaEnvelope, FaIdBadge, FaEdit, FaTrash, FaTimes, FaMapMarkerAlt } from 'react-icons/fa';
 
 export default function AgentsPage() {
   const [agents, setAgents] = useState([]);
-  const [form, setForm] = useState({ agent_code: '', name: '', phone: '', email: '' });
+  const [form, setForm] = useState({
+    agent_code: '',
+    name: '',
+    phone: '',
+    email: '',
+    region_id: '',
+    area_id: '',
+  });
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
 
-  // For edit modal
+  // Regions and Areas
+  const [regions, setRegions] = useState([]);
+  const [areas, setAreas] = useState([]);
+  const [filteredAreas, setFilteredAreas] = useState([]);
+
+  // Edit modal
   const [editingAgent, setEditingAgent] = useState(null);
-  const [editForm, setEditForm] = useState({ agent_code: '', name: '', phone: '', email: '' });
+  const [editForm, setEditForm] = useState({
+    agent_code: '',
+    name: '',
+    phone: '',
+    email: '',
+    region_id: '',
+    area_id: '',
+  });
   const [editLoading, setEditLoading] = useState(false);
   const [editError, setEditError] = useState('');
 
@@ -20,9 +39,48 @@ export default function AgentsPage() {
     if (data.success) setAgents(data.data);
   };
 
-  useEffect(() => { fetchAgents(); }, []);
+  const fetchRegions = async () => {
+    const res = await fetch('/api/admin/regions');
+    const data = await res.json();
+    if (data.success) setRegions(data.data);
+  };
 
-  const handleChange = (e) => setForm({ ...form, [e.target.name]: e.target.value });
+  const fetchAreas = async (regionId) => {
+    const res = await fetch(`/api/admin/areas${regionId ? `?regionId=${regionId}` : ''}`);
+    const data = await res.json();
+    if (data.success) setAreas(data.data);
+  };
+
+  useEffect(() => {
+    fetchAgents();
+    fetchRegions();
+    fetchAreas();
+  }, []);
+
+  useEffect(() => {
+    if (form.region_id) {
+      const filtered = areas.filter(a => a.region_id === parseInt(form.region_id));
+      setFilteredAreas(filtered);
+    } else {
+      setFilteredAreas([]);
+    }
+    setForm({ ...form, area_id: '' });
+  }, [form.region_id, areas]);
+
+  useEffect(() => {
+    if (editForm.region_id) {
+      const filtered = areas.filter(a => a.region_id === parseInt(editForm.region_id));
+      setFilteredAreas(filtered);
+    } else {
+      setFilteredAreas([]);
+    }
+    setEditForm({ ...editForm, area_id: '' });
+  }, [editForm.region_id, areas]);
+
+  const handleChange = (e) => {
+    const { name, value } = e.target;
+    setForm({ ...form, [name]: name === 'agent_code' ? value.toUpperCase() : value });
+  };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -36,7 +94,7 @@ export default function AgentsPage() {
       });
       const data = await res.json();
       if (data.success) {
-        setForm({ agent_code: '', name: '', phone: '', email: '' });
+        setForm({ agent_code: '', name: '', phone: '', email: '', region_id: '', area_id: '' });
         fetchAgents();
       } else {
         setError(data.message);
@@ -45,7 +103,6 @@ export default function AgentsPage() {
     setLoading(false);
   };
 
-  // Open edit modal
   const openEditModal = (agent) => {
     setEditingAgent(agent);
     setEditForm({
@@ -53,18 +110,21 @@ export default function AgentsPage() {
       name: agent.name,
       phone: agent.phone,
       email: agent.email,
+      region_id: agent.region_id || '',
+      area_id: agent.area_id || '',
     });
     setEditError('');
   };
 
   const closeEditModal = () => {
     setEditingAgent(null);
-    setEditForm({ agent_code: '', name: '', phone: '', email: '' });
+    setEditForm({ agent_code: '', name: '', phone: '', email: '', region_id: '', area_id: '' });
     setEditError('');
   };
 
   const handleEditChange = (e) => {
-    setEditForm({ ...editForm, [e.target.name]: e.target.value });
+    const { name, value } = e.target;
+    setEditForm({ ...editForm, [name]: value });
   };
 
   const handleUpdate = async (e) => {
@@ -93,9 +153,7 @@ export default function AgentsPage() {
   const handleDelete = async (id) => {
     if (!confirm('Are you sure you want to delete this agent? This will also remove all their ticket assignments.')) return;
     try {
-      const res = await fetch(`/api/admin/agents/${id}`, {
-        method: 'DELETE',
-      });
+      const res = await fetch(`/api/admin/agents/${id}`, { method: 'DELETE' });
       const data = await res.json();
       if (data.success) {
         fetchAgents();
@@ -117,21 +175,18 @@ export default function AgentsPage() {
 
         {/* Create Form */}
         <div className="bg-white rounded-lg shadow-sm border border-gray-100 p-4 mb-6">
-          <form onSubmit={handleSubmit} className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+          <form onSubmit={handleSubmit} className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
             <div>
-              <label htmlFor="agent_code" className="block text-xs font-medium text-gray-500 uppercase tracking-wider mb-1">
-                Agent Code
-              </label>
+              <label className="block text-xs font-medium text-gray-500 uppercase tracking-wider mb-1">Agent Code</label>
               <div className="relative">
                 <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
                   <FaIdBadge className="w-3.5 h-3.5 text-gray-400" />
                 </div>
                 <input
-                  id="agent_code"
                   name="agent_code"
                   type="text"
                   placeholder="e.g., AG-001"
-                  className="w-full border border-gray-200 rounded-lg pl-9 pr-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  className="w-full border border-gray-200 rounded-lg pl-9 pr-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
                   value={form.agent_code}
                   onChange={handleChange}
                   required
@@ -139,19 +194,16 @@ export default function AgentsPage() {
               </div>
             </div>
             <div>
-              <label htmlFor="name" className="block text-xs font-medium text-gray-500 uppercase tracking-wider mb-1">
-                Full Name
-              </label>
+              <label className="block text-xs font-medium text-gray-500 uppercase tracking-wider mb-1">Full Name</label>
               <div className="relative">
                 <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
                   <FaUser className="w-3.5 h-3.5 text-gray-400" />
                 </div>
                 <input
-                  id="name"
                   name="name"
                   type="text"
                   placeholder="John Doe"
-                  className="w-full border border-gray-200 rounded-lg pl-9 pr-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  className="w-full border border-gray-200 rounded-lg pl-9 pr-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
                   value={form.name}
                   onChange={handleChange}
                   required
@@ -159,19 +211,16 @@ export default function AgentsPage() {
               </div>
             </div>
             <div>
-              <label htmlFor="phone" className="block text-xs font-medium text-gray-500 uppercase tracking-wider mb-1">
-                Phone
-              </label>
+              <label className="block text-xs font-medium text-gray-500 uppercase tracking-wider mb-1">Phone</label>
               <div className="relative">
                 <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
                   <FaPhone className="w-3.5 h-3.5 text-gray-400" />
                 </div>
                 <input
-                  id="phone"
                   name="phone"
                   type="text"
                   placeholder="+91 98765 43210"
-                  className="w-full border border-gray-200 rounded-lg pl-9 pr-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  className="w-full border border-gray-200 rounded-lg pl-9 pr-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
                   value={form.phone}
                   onChange={handleChange}
                   required
@@ -179,26 +228,58 @@ export default function AgentsPage() {
               </div>
             </div>
             <div>
-              <label htmlFor="email" className="block text-xs font-medium text-gray-500 uppercase tracking-wider mb-1">
-                Email
-              </label>
+              <label className="block text-xs font-medium text-gray-500 uppercase tracking-wider mb-1">Email</label>
               <div className="relative">
                 <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
                   <FaEnvelope className="w-3.5 h-3.5 text-gray-400" />
                 </div>
                 <input
-                  id="email"
                   name="email"
                   type="email"
                   placeholder="john@example.com"
-                  className="w-full border border-gray-200 rounded-lg pl-9 pr-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  className="w-full border border-gray-200 rounded-lg pl-9 pr-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
                   value={form.email}
                   onChange={handleChange}
                   required
                 />
               </div>
             </div>
-            <div className="sm:col-span-2 lg:col-span-4 flex items-center space-x-4">
+            <div>
+              <label className="block text-xs font-medium text-gray-500 uppercase tracking-wider mb-1">Region</label>
+              <div className="relative">
+                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                  <FaMapMarkerAlt className="w-3.5 h-3.5 text-gray-400" />
+                </div>
+                <select
+                  name="region_id"
+                  className="w-full border border-gray-200 rounded-lg pl-9 pr-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  value={form.region_id}
+                  onChange={handleChange}
+                >
+                  <option value="">Select Region</option>
+                  {regions.map(r => <option key={r.id} value={r.id}>{r.name}</option>)}
+                </select>
+              </div>
+            </div>
+            <div>
+              <label className="block text-xs font-medium text-gray-500 uppercase tracking-wider mb-1">Area</label>
+              <div className="relative">
+                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                  <FaMapMarkerAlt className="w-3.5 h-3.5 text-gray-400" />
+                </div>
+                <select
+                  name="area_id"
+                  className="w-full border border-gray-200 rounded-lg pl-9 pr-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  value={form.area_id}
+                  onChange={handleChange}
+                  disabled={!form.region_id}
+                >
+                  <option value="">Select Area</option>
+                  {filteredAreas.map(a => <option key={a.id} value={a.id}>{a.name}</option>)}
+                </select>
+              </div>
+            </div>
+            <div className="sm:col-span-2 lg:col-span-3 flex items-center space-x-4">
               <button
                 type="submit"
                 className="bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium px-4 py-1.5 rounded-lg transition flex items-center space-x-2 h-9"
@@ -222,19 +303,19 @@ export default function AgentsPage() {
             <table className="w-full text-xs">
               <thead className="bg-gray-50 text-gray-600 uppercase tracking-wider">
                 <tr>
-                  <th className="px-4 py-2 text-left font-medium">Code</th>
-                  <th className="px-4 py-2 text-left font-medium">Name</th>
-                  <th className="px-4 py-2 text-left font-medium">Phone</th>
-                  <th className="px-4 py-2 text-left font-medium">Email</th>
-                  <th className="px-4 py-2 text-center font-medium">Actions</th>
+                  <th className="px-4 py-2 text-left">Code</th>
+                  <th className="px-4 py-2 text-left">Name</th>
+                  <th className="px-4 py-2 text-left">Phone</th>
+                  <th className="px-4 py-2 text-left">Email</th>
+                  <th className="px-4 py-2 text-left">Region</th>
+                  <th className="px-4 py-2 text-left">Area</th>
+                  <th className="px-4 py-2 text-center">Actions</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-100">
                 {agents.length === 0 ? (
                   <tr>
-                    <td colSpan="5" className="px-4 py-4 text-center text-gray-400 text-xs">
-                      No agents created yet.
-                    </td>
+                    <td colSpan="7" className="px-4 py-4 text-center text-gray-400">No agents created yet.</td>
                   </tr>
                 ) : (
                   agents.map((agent) => (
@@ -243,20 +324,14 @@ export default function AgentsPage() {
                       <td className="px-4 py-2.5 text-gray-700">{agent.name}</td>
                       <td className="px-4 py-2.5 text-gray-700">{agent.phone}</td>
                       <td className="px-4 py-2.5 text-gray-700">{agent.email}</td>
+                      <td className="px-4 py-2.5 text-gray-700">{agent.region_name || '-'}</td>
+                      <td className="px-4 py-2.5 text-gray-700">{agent.area_name || '-'}</td>
                       <td className="px-4 py-2.5 text-center">
                         <div className="flex items-center justify-center space-x-2">
-                          <button
-                            onClick={() => openEditModal(agent)}
-                            className="text-blue-600 hover:text-blue-800 transition p-1 rounded hover:bg-blue-50"
-                            title="Edit"
-                          >
+                          <button onClick={() => openEditModal(agent)} className="text-blue-600 hover:text-blue-800 transition p-1 rounded hover:bg-blue-50" title="Edit">
                             <FaEdit className="w-4 h-4" />
                           </button>
-                          <button
-                            onClick={() => handleDelete(agent.id)}
-                            className="text-red-600 hover:text-red-800 transition p-1 rounded hover:bg-red-50"
-                            title="Delete"
-                          >
+                          <button onClick={() => handleDelete(agent.id)} className="text-red-600 hover:text-red-800 transition p-1 rounded hover:bg-red-50" title="Delete">
                             <FaTrash className="w-4 h-4" />
                           </button>
                         </div>
@@ -274,100 +349,45 @@ export default function AgentsPage() {
       {editingAgent && (
         <div className="fixed inset-0 bg-black bg-opacity-40 flex items-center justify-center z-50 p-4">
           <div className="bg-white rounded-xl shadow-xl max-w-md w-full p-6 relative">
-            <button
-              onClick={closeEditModal}
-              className="absolute top-3 right-3 text-gray-400 hover:text-gray-600 transition"
-            >
+            <button onClick={closeEditModal} className="absolute top-3 right-3 text-gray-400 hover:text-gray-600">
               <FaTimes className="w-5 h-5" />
             </button>
             <h2 className="text-lg font-semibold text-gray-900 mb-4">Edit Agent</h2>
             <form onSubmit={handleUpdate} className="space-y-4">
               <div>
-                <label className="block text-xs font-medium text-gray-500 uppercase tracking-wider mb-1">
-                  Agent Code
-                </label>
-                <div className="relative">
-                  <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                    <FaIdBadge className="w-3.5 h-3.5 text-gray-400" />
-                  </div>
-                  <input
-                    name="agent_code"
-                    type="text"
-                    className="w-full border border-gray-200 rounded-lg pl-9 pr-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-                    value={editForm.agent_code}
-                    onChange={handleEditChange}
-                    required
-                  />
-                </div>
+                <label className="block text-xs font-medium text-gray-500 uppercase tracking-wider mb-1">Agent Code</label>
+                <input name="agent_code" type="text" className="w-full border border-gray-200 rounded-lg px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" value={editForm.agent_code} onChange={handleEditChange} required />
               </div>
               <div>
-                <label className="block text-xs font-medium text-gray-500 uppercase tracking-wider mb-1">
-                  Full Name
-                </label>
-                <div className="relative">
-                  <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                    <FaUser className="w-3.5 h-3.5 text-gray-400" />
-                  </div>
-                  <input
-                    name="name"
-                    type="text"
-                    className="w-full border border-gray-200 rounded-lg pl-9 pr-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-                    value={editForm.name}
-                    onChange={handleEditChange}
-                    required
-                  />
-                </div>
+                <label className="block text-xs font-medium text-gray-500 uppercase tracking-wider mb-1">Full Name</label>
+                <input name="name" type="text" className="w-full border border-gray-200 rounded-lg px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" value={editForm.name} onChange={handleEditChange} required />
               </div>
               <div>
-                <label className="block text-xs font-medium text-gray-500 uppercase tracking-wider mb-1">
-                  Phone
-                </label>
-                <div className="relative">
-                  <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                    <FaPhone className="w-3.5 h-3.5 text-gray-400" />
-                  </div>
-                  <input
-                    name="phone"
-                    type="text"
-                    className="w-full border border-gray-200 rounded-lg pl-9 pr-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-                    value={editForm.phone}
-                    onChange={handleEditChange}
-                    required
-                  />
-                </div>
+                <label className="block text-xs font-medium text-gray-500 uppercase tracking-wider mb-1">Phone</label>
+                <input name="phone" type="text" className="w-full border border-gray-200 rounded-lg px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" value={editForm.phone} onChange={handleEditChange} required />
               </div>
               <div>
-                <label className="block text-xs font-medium text-gray-500 uppercase tracking-wider mb-1">
-                  Email
-                </label>
-                <div className="relative">
-                  <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                    <FaEnvelope className="w-3.5 h-3.5 text-gray-400" />
-                  </div>
-                  <input
-                    name="email"
-                    type="email"
-                    className="w-full border border-gray-200 rounded-lg pl-9 pr-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-                    value={editForm.email}
-                    onChange={handleEditChange}
-                    required
-                  />
-                </div>
+                <label className="block text-xs font-medium text-gray-500 uppercase tracking-wider mb-1">Email</label>
+                <input name="email" type="email" className="w-full border border-gray-200 rounded-lg px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" value={editForm.email} onChange={handleEditChange} required />
+              </div>
+              <div>
+                <label className="block text-xs font-medium text-gray-500 uppercase tracking-wider mb-1">Region</label>
+                <select name="region_id" className="w-full border border-gray-200 rounded-lg px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" value={editForm.region_id} onChange={handleEditChange}>
+                  <option value="">Select Region</option>
+                  {regions.map(r => <option key={r.id} value={r.id}>{r.name}</option>)}
+                </select>
+              </div>
+              <div>
+                <label className="block text-xs font-medium text-gray-500 uppercase tracking-wider mb-1">Area</label>
+                <select name="area_id" className="w-full border border-gray-200 rounded-lg px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" value={editForm.area_id} onChange={handleEditChange} disabled={!editForm.region_id}>
+                  <option value="">Select Area</option>
+                  {areas.filter(a => a.region_id === parseInt(editForm.region_id)).map(a => <option key={a.id} value={a.id}>{a.name}</option>)}
+                </select>
               </div>
               {editError && <p className="text-red-600 text-xs">{editError}</p>}
               <div className="flex space-x-3 pt-2">
-                <button
-                  type="button"
-                  onClick={closeEditModal}
-                  className="flex-1 bg-gray-100 hover:bg-gray-200 text-gray-700 text-sm font-medium px-4 py-2 rounded-lg transition"
-                >
-                  Cancel
-                </button>
-                <button
-                  type="submit"
-                  className="flex-1 bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium px-4 py-2 rounded-lg transition"
-                  disabled={editLoading}
-                >
+                <button type="button" onClick={closeEditModal} className="flex-1 bg-gray-100 hover:bg-gray-200 text-gray-700 px-4 py-2 rounded-lg transition">Cancel</button>
+                <button type="submit" className="flex-1 bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg transition" disabled={editLoading}>
                   {editLoading ? 'Saving...' : 'Save Changes'}
                 </button>
               </div>

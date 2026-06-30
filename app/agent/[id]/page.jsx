@@ -170,6 +170,7 @@ export default function AgentDashboard({ params }) {
     b.tickets.map((t) => ({
       chitName: b.chitName,
       ticketNumber: t.ticketNumber,
+       auctionDate: b.auctionDate,
       target: t.target,
       collected: t.collected,
       pending: t.pending,
@@ -307,6 +308,8 @@ export default function AgentDashboard({ params }) {
                 <tr>
                   <th className="px-4 py-2 text-left">Chit</th>
                   <th className="px-4 py-2 text-left">Ticket</th>
+                  
+           <th className="px-4 py-2 text-left">Auction Date</th> 
                   <th className="px-4 py-2 text-right">Target (₹)</th>
                   <th className="px-4 py-2 text-right">Collected (₹)</th>
                   <th className="px-4 py-2 text-right">Pending (₹)</th>
@@ -316,33 +319,37 @@ export default function AgentDashboard({ params }) {
               <tbody className="divide-y divide-gray-100">
                 {ticketDetails.length === 0 ? (
                   <tr>
-                    <td colSpan="6" className="px-4 py-3 text-center text-gray-400 text-xs">
+                    <td colSpan="7" className="px-4 py-3 text-center text-gray-400 text-xs">
                       No tickets assigned yet.
                     </td>
                   </tr>
                 ) : (
                   ticketDetails.map((t, idx) => (
-                    <tr key={idx} className="hover:bg-gray-50 transition">
-                      <td className="px-4 py-2.5 font-medium text-gray-800">{t.chitName}</td>
-                      <td className="px-4 py-2.5 text-gray-600">Token {t.ticketNumber}</td>
-                      <td className="px-4 py-2.5 text-right text-gray-600">₹{t.target.toLocaleString()}</td>
-                      <td className="px-4 py-2.5 text-right text-green-600 font-medium">₹{t.collected.toLocaleString()}</td>
-                      <td className="px-4 py-2.5 text-right text-red-600 font-medium">₹{t.pending.toLocaleString()}</td>
-                      <td className="px-4 py-2.5">
-                        <div className="flex items-center justify-end gap-2">
-                          <div className="w-20 bg-gray-200 rounded-full h-1.5">
-                            <div
-                              className="bg-blue-600 h-1.5 rounded-full transition-all duration-300"
-                              style={{ width: `${t.progress}%` }}
-                            ></div>
-                          </div>
-                          <span className="text-xs font-medium text-gray-600 w-8 text-right">
-                            {t.progress}%
-                          </span>
-                        </div>
-                      </td>
-                    </tr>
-                  ))
+  <tr key={idx} className="hover:bg-gray-50 transition">
+    <td className="px-4 py-2.5 font-medium text-gray-800">{t.chitName}</td>
+    <td className="px-4 py-2.5 text-gray-600">Token {t.ticketNumber}</td>
+    <td className="px-4 py-2.5 text-gray-600">
+      {t.auctionDate ? new Date(t.auctionDate).toLocaleString('en-GB', {
+        day: '2-digit',
+        month: 'short',
+        year: 'numeric',
+        hour: '2-digit',
+        minute: '2-digit'
+      }) : '-'}
+    </td>
+    <td className="px-4 py-2.5 text-right text-gray-600">₹{t.target.toLocaleString()}</td>
+    <td className="px-4 py-2.5 text-right text-green-600 font-medium">₹{t.collected.toLocaleString()}</td>
+    <td className="px-4 py-2.5 text-right text-red-600 font-medium">₹{t.pending.toLocaleString()}</td>
+    <td className="px-4 py-2.5">
+      <div className="flex items-center justify-end gap-2">
+        <div className="w-20 bg-gray-200 rounded-full h-1.5">
+          <div className="bg-blue-600 h-1.5 rounded-full transition-all duration-300" style={{ width: `${t.progress}%` }}></div>
+        </div>
+        <span className="text-xs font-medium text-gray-600 w-8 text-right">{t.progress}%</span>
+      </div>
+    </td>
+  </tr>
+))
                 )}
               </tbody>
             </table>

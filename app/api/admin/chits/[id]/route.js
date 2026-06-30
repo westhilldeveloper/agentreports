@@ -5,36 +5,30 @@ import { NextResponse } from 'next/server';
 export async function PUT(req, { params }) {
   try {
     const { id } = await params;
-    const { name, total_tickets } = await req.json();
+    const { name, total_tickets, auction_date } = await req.json();
 
-    if (!name || !total_tickets) {
+    if (!name || !total_tickets || !auction_date) {
       return NextResponse.json(
-        { success: false, message: 'Name and total tickets are required' },
+        { success: false, message: 'All fields are required' },
         { status: 400 }
       );
     }
 
     const result = await sql`
       UPDATE chits 
-      SET name = ${name}, total_tickets = ${total_tickets}
+      SET name = ${name}, total_tickets = ${total_tickets}, auction_date = ${auction_date}
       WHERE id = ${id}
       RETURNING *
     `;
 
     if (result.length === 0) {
-      return NextResponse.json(
-        { success: false, message: 'Chit not found' },
-        { status: 404 }
-      );
+      return NextResponse.json({ success: false, message: 'Chit not found' }, { status: 404 });
     }
 
     return NextResponse.json({ success: true, data: result[0] });
   } catch (error) {
     console.error('Update Chit Error:', error);
-    return NextResponse.json(
-      { success: false, message: 'Failed to update chit' },
-      { status: 500 }
-    );
+    return NextResponse.json({ success: false, message: 'Failed to update chit' }, { status: 500 });
   }
 }
 
