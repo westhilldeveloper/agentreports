@@ -1,48 +1,53 @@
 'use client';
 import { useState, useEffect } from 'react';
-import { FaEdit, FaTrash, FaTimes, FaUser, FaCalendarAlt, FaList, FaTicketAlt, FaDollarSign, FaFilter, FaSyncAlt } from 'react-icons/fa';
+import {
+  FaCalendarAlt, FaSave, FaUser, FaList, FaTicketAlt, FaDollarSign,
+  FaEdit, FaTrash, FaTimes
+} from 'react-icons/fa';
 
 export default function DailyUpdate() {
   const [agents, setAgents] = useState([]);
   const [chits, setChits] = useState([]);
   const [tickets, setTickets] = useState([]);
   const [selectedAgentId, setSelectedAgentId] = useState('');
-  const [selectedMonth, setSelectedMonth] = useState(() => {
-    const now = new Date();
-    return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
-  });
+  const [selectedMonth, setSelectedMonth] = useState('');  // ✅ Start empty
   const [selectedChitId, setSelectedChitId] = useState('');
   const [selectedTicketNumber, setSelectedTicketNumber] = useState('');
   const [pendingAmount, setPendingAmount] = useState('');
   const [message, setMessage] = useState('');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
-
-  // List state
   const [allCollections, setAllCollections] = useState([]);
   const [filterAgentId, setFilterAgentId] = useState('');
   const [filterChitId, setFilterChitId] = useState('');
-  const [filterMonth, setFilterMonth] = useState(() => {
-    const now = new Date();
-    return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
-  });
+  const [filterMonth, setFilterMonth] = useState('');  // ✅ Start empty
 
-  // Edit modal
+  // Edit modal state
   const [editModalOpen, setEditModalOpen] = useState(false);
   const [editingCollection, setEditingCollection] = useState(null);
   const [editPendingAmount, setEditPendingAmount] = useState('');
   const [editLoading, setEditLoading] = useState(false);
   const [editError, setEditError] = useState('');
 
-  // Fetch dropdowns
+  // ✅ Set current month only on the client
+  useEffect(() => {
+    const now = new Date();
+    const month = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
+    setSelectedMonth(month);
+    setFilterMonth(month);
+  }, []);
+
+  // Fetch agents and chits
   useEffect(() => {
     const fetchDropdowns = async () => {
-      const res = await fetch('/api/admin/daily-update');
-      const data = await res.json();
-      if (data.success) {
-        setAgents(data.data.agents);
-        setChits(data.data.chits);
-      }
+      const [agentsRes, chitsRes] = await Promise.all([
+        fetch('/api/admin/agents'),
+        fetch('/api/admin/chits'),
+      ]);
+      const agentsData = await agentsRes.json();
+      const chitsData = await chitsRes.json();
+      if (agentsData.success) setAgents(agentsData.data);
+      if (chitsData.success) setChits(chitsData.data);
     };
     fetchDropdowns();
   }, []);
@@ -62,7 +67,7 @@ export default function DailyUpdate() {
     fetchTickets();
   }, [selectedChitId, selectedAgentId]);
 
-  // Fetch list
+  // Fetch collections
   const fetchCollections = async () => {
     const params = new URLSearchParams();
     params.append('list', 'true');
@@ -75,10 +80,10 @@ export default function DailyUpdate() {
   };
 
   useEffect(() => {
-    fetchCollections();
+    if (filterMonth) fetchCollections();
   }, [filterAgentId, filterChitId, filterMonth]);
 
-  // Submit new
+  // Submit new collection
   const handleSubmit = async (e) => {
     e.preventDefault();
     const ticket = tickets.find(t => t.ticketNumber === parseInt(selectedTicketNumber));
@@ -183,102 +188,110 @@ export default function DailyUpdate() {
   return (
     <div className="min-h-screen bg-gray-50 font-sans p-6">
       <div className="max-w-6xl mx-auto">
-        {/* Header */}
         <div className="mb-8">
           <h1 className="text-3xl font-light text-gray-900">Daily Collection Update</h1>
           <p className="text-sm text-gray-500 mt-1">Record and manage daily collections for assigned tickets</p>
         </div>
 
-        {/* Form Card */}
+        {/* Form */}
         <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6 mb-8">
           <form onSubmit={handleSubmit} className="space-y-5">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
               <div>
-                <label className="block text-xs font-medium text-gray-500 uppercase tracking-wider mb-1.5">Agent</label>
+                <label className="block text-xs font-medium text-gray-500 uppercase tracking-wider mb-1">Agent</label>
                 <div className="relative">
                   <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                    <FaUser className="w-3.5 h-3.5 text-gray-400" />
+                    <FaUser className="w-4 h-4 text-gray-400" />
                   </div>
                   <select
-                    className="w-full border border-gray-200 rounded-xl pl-9 pr-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400 focus:border-transparent bg-gray-50 appearance-none"
+                    className="w-full border border-gray-200 rounded-xl pl-9 pr-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
                     value={selectedAgentId}
                     onChange={(e) => setSelectedAgentId(e.target.value)}
                     required
                   >
                     <option value="">Select Agent</option>
-                    {agents.map(a => <option key={a.id} value={a.id}>{a.name} ({a.agent_code})</option>)}
+                    {agents.map((a) => (
+                      <option key={a.id} value={a.id}>{a.name} ({a.agent_code})</option>
+                    ))}
                   </select>
                 </div>
               </div>
               <div>
-                <label className="block text-xs font-medium text-gray-500 uppercase tracking-wider mb-1.5">Month</label>
+                <label className="block text-xs font-medium text-gray-500 uppercase tracking-wider mb-1">Month</label>
                 <div className="relative">
                   <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                    <FaCalendarAlt className="w-3.5 h-3.5 text-gray-400" />
+                    <FaCalendarAlt className="w-4 h-4 text-gray-400" />
                   </div>
                   <input
                     type="month"
-                    className="w-full border border-gray-200 rounded-xl pl-9 pr-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400 focus:border-transparent bg-gray-50"
+                    className="w-full border border-gray-200 rounded-xl pl-9 pr-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
                     value={selectedMonth}
                     onChange={(e) => setSelectedMonth(e.target.value)}
                     required
+                    suppressHydrationWarning
                   />
                 </div>
               </div>
               <div>
-                <label className="block text-xs font-medium text-gray-500 uppercase tracking-wider mb-1.5">Chit</label>
+                <label className="block text-xs font-medium text-gray-500 uppercase tracking-wider mb-1">Chit</label>
                 <div className="relative">
                   <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                    <FaList className="w-3.5 h-3.5 text-gray-400" />
+                    <FaList className="w-4 h-4 text-gray-400" />
                   </div>
                   <select
-                    className="w-full border border-gray-200 rounded-xl pl-9 pr-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400 focus:border-transparent bg-gray-50 appearance-none"
+                    className="w-full border border-gray-200 rounded-xl pl-9 pr-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
                     value={selectedChitId}
                     onChange={(e) => setSelectedChitId(e.target.value)}
                     required
                   >
                     <option value="">Select Chit</option>
-                    {chits.map(c => <option key={c.id} value={c.id}>{c.name} ({c.total_tickets} tickets)</option>)}
+                    {chits.map((c) => (
+                      <option key={c.id} value={c.id}>{c.name} ({c.total_tickets} tickets)</option>
+                    ))}
                   </select>
                 </div>
               </div>
               <div>
-                <label className="block text-xs font-medium text-gray-500 uppercase tracking-wider mb-1.5">Ticket</label>
+                <label className="block text-xs font-medium text-gray-500 uppercase tracking-wider mb-1">Ticket</label>
                 <div className="relative">
                   <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                    <FaTicketAlt className="w-3.5 h-3.5 text-gray-400" />
+                    <FaTicketAlt className="w-4 h-4 text-gray-400" />
                   </div>
                   <select
-                    className="w-full border border-gray-200 rounded-xl pl-9 pr-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400 focus:border-transparent bg-gray-50 appearance-none"
+                    className="w-full border border-gray-200 rounded-xl pl-9 pr-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
                     value={selectedTicketNumber}
                     onChange={(e) => setSelectedTicketNumber(e.target.value)}
                     required
                     disabled={tickets.length === 0}
                   >
                     <option value="">Select Ticket</option>
-                    {tickets.map(t => {
+                    {tickets.map((t) => {
                       let label = `Token ${t.ticketNumber}`;
                       if (t.isAssigned) {
                         label += t.isAssignedToSelected ? ' (Assigned)' : ` (Assigned to ${t.assignedToAgentName})`;
                       } else {
                         label += ' (Unassigned)';
                       }
-                      return <option key={t.ticketNumber} value={t.ticketNumber} disabled={!t.isAssignedToSelected}>{label}</option>;
+                      return (
+                        <option key={t.ticketNumber} value={t.ticketNumber} disabled={!t.isAssignedToSelected}>
+                          {label}
+                        </option>
+                      );
                     })}
                   </select>
                 </div>
               </div>
             </div>
             <div>
-              <label className="block text-xs font-medium text-gray-500 uppercase tracking-wider mb-1.5">Pending Amount (₹)</label>
+              <label className="block text-xs font-medium text-gray-500 uppercase tracking-wider mb-1">Pending Amount (₹)</label>
               <div className="relative">
                 <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                  <FaDollarSign className="w-3.5 h-3.5 text-gray-400" />
+                  <FaDollarSign className="w-4 h-4 text-gray-400" />
                 </div>
                 <input
                   type="number"
                   placeholder="e.g., 3000"
-                  className="w-full border border-gray-200 rounded-xl pl-9 pr-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400 focus:border-transparent bg-gray-50"
+                  className="w-full border border-gray-200 rounded-xl pl-9 pr-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
                   value={pendingAmount}
                   onChange={(e) => setPendingAmount(e.target.value)}
                   required
@@ -290,52 +303,58 @@ export default function DailyUpdate() {
             {message && <p className="text-green-600 text-sm">{message}</p>}
             <button
               type="submit"
-              className="bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium px-6 py-2.5 rounded-xl transition shadow-sm hover:shadow disabled:opacity-60 disabled:cursor-not-allowed"
+              className="bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium px-6 py-2.5 rounded-xl transition flex items-center space-x-2"
               disabled={loading || !selectedTicketNumber || !pendingAmount}
             >
-              {loading ? 'Updating...' : 'Update Collection'}
+              <FaSave className="w-4 h-4" />
+              <span>{loading ? 'Updating...' : 'Update Collection'}</span>
             </button>
           </form>
         </div>
 
-        {/* List Section */}
+        {/* Collection List */}
         <div>
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-4">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between mb-4 gap-3">
             <h2 className="text-xl font-light text-gray-800">All Collection Entries</h2>
             <div className="flex flex-wrap items-center gap-3">
               <select
-                className="border border-gray-200 rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400 bg-gray-50"
+                className="border border-gray-200 rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
                 value={filterAgentId}
                 onChange={(e) => setFilterAgentId(e.target.value)}
               >
                 <option value="">All Agents</option>
-                {agents.map(a => <option key={a.id} value={a.id}>{a.name}</option>)}
+                {agents.map((a) => (
+                  <option key={a.id} value={a.id}>{a.name}</option>
+                ))}
               </select>
               <select
-                className="border border-gray-200 rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400 bg-gray-50"
+                className="border border-gray-200 rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
                 value={filterChitId}
                 onChange={(e) => setFilterChitId(e.target.value)}
               >
                 <option value="">All Chits</option>
-                {chits.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
+                {chits.map((c) => (
+                  <option key={c.id} value={c.id}>{c.name}</option>
+                ))}
               </select>
               <input
                 type="month"
-                className="border border-gray-200 rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400 bg-gray-50"
+                className="border border-gray-200 rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
                 value={filterMonth}
                 onChange={(e) => setFilterMonth(e.target.value)}
+                suppressHydrationWarning
               />
               <button
                 onClick={clearFilters}
-                className="text-sm text-gray-500 hover:text-gray-700 px-3 py-2 rounded-xl border border-gray-200 hover:border-gray-300 transition"
+                className="text-sm text-gray-500 hover:text-gray-700 px-3 py-2 border border-gray-200 rounded-xl hover:bg-gray-50 transition"
               >
                 Clear Filters
               </button>
               <button
                 onClick={fetchCollections}
-                className="text-sm bg-gray-100 hover:bg-gray-200 text-gray-700 px-3 py-2 rounded-xl transition flex items-center gap-1.5"
+                className="text-sm bg-gray-100 hover:bg-gray-200 text-gray-700 px-3 py-2 rounded-xl transition"
               >
-                <FaSyncAlt className="w-3.5 h-3.5" /> Refresh
+                Refresh
               </button>
             </div>
           </div>
@@ -343,7 +362,7 @@ export default function DailyUpdate() {
           <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
             <div className="overflow-x-auto max-h-96 overflow-y-auto">
               <table className="w-full text-sm">
-                <thead className="bg-gray-50/80 text-gray-500 text-xs uppercase tracking-wider sticky top-0 z-10 backdrop-blur-sm">
+                <thead className="bg-gray-50/80 text-gray-500 text-xs uppercase tracking-wider sticky top-0 z-10 shadow-sm">
                   <tr>
                     <th className="px-5 py-3.5 text-left font-medium">Agent</th>
                     <th className="px-5 py-3.5 text-left font-medium">Chit</th>
@@ -356,34 +375,30 @@ export default function DailyUpdate() {
                 <tbody className="divide-y divide-gray-100">
                   {allCollections.length === 0 ? (
                     <tr>
-                      <td colSpan="6" className="px-5 py-8 text-center text-gray-400">
-                        No entries found.
-                      </td>
+                      <td colSpan="6" className="px-5 py-8 text-center text-gray-400">No entries found.</td>
                     </tr>
                   ) : (
-                    allCollections.map(col => (
-                      <tr key={col.id} className="hover:bg-gray-50/60 transition-colors">
+                    allCollections.map((col) => (
+                      <tr key={col.id} className="hover:bg-gray-50 transition">
                         <td className="px-5 py-3 font-medium text-gray-800">{col.agent_name}</td>
                         <td className="px-5 py-3 text-gray-700">{col.chit_name}</td>
                         <td className="px-5 py-3 text-gray-700">Token {col.ticket_number}</td>
-                        <td className="px-5 py-3 text-gray-500">
-                          {new Date(col.month_year).toLocaleString('en-GB', { month: 'short', year: 'numeric' })}
+                        <td className="px-5 py-3 text-gray-700">
+                          {col.month_year ? new Date(col.month_year).toLocaleString('en-GB', { month: 'short', year: 'numeric' }) : '—'}
                         </td>
-                        <td className="px-5 py-3 text-red-600 font-medium">
-                          ₹{parseFloat(col.pending_amount).toLocaleString()}
-                        </td>
+                        <td className="px-5 py-3 text-red-600 font-medium">₹{parseFloat(col.pending_amount).toLocaleString()}</td>
                         <td className="px-5 py-3 text-center">
-                          <div className="flex items-center justify-center space-x-1.5">
+                          <div className="flex items-center justify-center space-x-2">
                             <button
                               onClick={() => openEditModal(col)}
-                              className="p-1.5 text-blue-500 hover:text-blue-700 hover:bg-blue-50 rounded-lg transition"
+                              className="text-blue-600 hover:text-blue-800 transition p-1 rounded hover:bg-blue-50"
                               title="Edit"
                             >
                               <FaEdit className="w-4 h-4" />
                             </button>
                             <button
                               onClick={() => handleDelete(col.id)}
-                              className="p-1.5 text-red-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition"
+                              className="text-red-600 hover:text-red-800 transition p-1 rounded hover:bg-red-50"
                               title="Delete"
                             >
                               <FaTrash className="w-4 h-4" />
@@ -402,26 +417,24 @@ export default function DailyUpdate() {
 
       {/* Edit Modal */}
       {editModalOpen && (
-        <div className="fixed inset-0 bg-black/30 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-2xl shadow-xl max-w-md w-full p-6 relative animate-fadeInUp">
+        <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-2xl shadow-xl max-w-md w-full p-6 relative">
             <button
               onClick={closeEditModal}
               className="absolute top-4 right-4 text-gray-400 hover:text-gray-600 transition"
             >
               <FaTimes className="w-5 h-5" />
             </button>
-            <h2 className="text-xl font-light text-gray-900 mb-1">Update Pending Amount</h2>
-            <p className="text-sm text-gray-500 mb-5">
+            <h2 className="text-xl font-light text-gray-800 mb-4">Update Pending Amount</h2>
+            <p className="text-sm text-gray-500 mb-4">
               {editingCollection?.agent_name} – {editingCollection?.chit_name} – Token {editingCollection?.ticket_number}
             </p>
-            <form onSubmit={handleEditSubmit} className="space-y-5">
+            <form onSubmit={handleEditSubmit} className="space-y-4">
               <div>
-                <label className="block text-xs font-medium text-gray-500 uppercase tracking-wider mb-1.5">
-                  Pending Amount (₹)
-                </label>
+                <label className="block text-xs font-medium text-gray-500 uppercase tracking-wider mb-1">Pending Amount (₹)</label>
                 <input
                   type="number"
-                  className="w-full border border-gray-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400 focus:border-transparent bg-gray-50"
+                  className="w-full border border-gray-200 rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
                   value={editPendingAmount}
                   onChange={(e) => setEditPendingAmount(e.target.value)}
                   required
@@ -432,13 +445,13 @@ export default function DailyUpdate() {
                 <button
                   type="button"
                   onClick={closeEditModal}
-                  className="flex-1 bg-gray-100 hover:bg-gray-200 text-gray-700 text-sm font-medium px-4 py-2.5 rounded-xl transition"
+                  className="flex-1 bg-gray-100 hover:bg-gray-200 text-gray-700 text-sm font-medium px-4 py-2 rounded-xl transition"
                 >
                   Cancel
                 </button>
                 <button
                   type="submit"
-                  className="flex-1 bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium px-4 py-2.5 rounded-xl transition shadow-sm disabled:opacity-60"
+                  className="flex-1 bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium px-4 py-2 rounded-xl transition"
                   disabled={editLoading}
                 >
                   {editLoading ? 'Saving...' : 'Save Changes'}
@@ -448,16 +461,6 @@ export default function DailyUpdate() {
           </div>
         </div>
       )}
-
-      <style jsx global>{`
-        @keyframes fadeInUp {
-          from { opacity: 0; transform: translateY(10px); }
-          to { opacity: 1; transform: translateY(0); }
-        }
-        .animate-fadeInUp {
-          animation: fadeInUp 0.2s ease-out;
-        }
-      `}</style>
     </div>
   );
 }

@@ -2,97 +2,66 @@
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { signOut } from 'next-auth/react';
-import {
-  FaHome,
-  FaList,
-  FaUser,
-  FaBullseye,
-  FaTicketAlt,
-  FaCalendarAlt,
-  FaSignOutAlt,
-  
+import { 
+  FaHome, FaList, FaUsers, FaBullseye, FaTicketAlt, FaCalendarAlt, FaFileAlt, FaSignOutAlt 
 } from 'react-icons/fa';
+import { useRole } from '@/context/RoleContext';
 
-export default function AdminSidebar({ isOpen, onClose }) {
+export default function AdminSidebar() {
   const pathname = usePathname();
+  const { role } = useRole();
+  const { isFullAdmin } = useRole();
 
-  const links = [
+  const allLinks = [
     { href: '/admin', label: 'Dashboard', icon: FaHome },
     { href: '/admin/chits', label: 'Chits', icon: FaList },
-    { href: '/admin/agents', label: 'Agents', icon: FaUser },
+    { href: '/admin/agents', label: 'Agents', icon: FaUsers },
     { href: '/admin/targets', label: 'Monthly Targets', icon: FaBullseye },
     { href: '/admin/assign-tickets', label: 'Assign Tickets', icon: FaTicketAlt },
     { href: '/admin/daily-update', label: 'Daily Update', icon: FaCalendarAlt },
-    { href: '/admin/reports', label: 'Reports', icon: FaCalendarAlt },
-    { href: '/admin/regions', label: 'Regions', icon: FaCalendarAlt  },
-{ href: '/admin/areas', label: 'Areas', icon: FaCalendarAlt  },
-    
+    { href: '/admin/reports', label: 'Reports', icon: FaFileAlt },
+  ];
+const limitedLinks = [
+  { href: '/admin', label: 'Dashboard', icon: FaHome },
+  { href: '/admin/reports', label: 'Reports', icon: FaFileAlt },
+];
+  // Manager sees only Reports and Dashboard (optional)
+  const managerLinks = [
+    { href: '/admin', label: 'Dashboard', icon: FaHome },
+    { href: '/admin/reports', label: 'Reports', icon: FaFileAlt },
   ];
 
+  const links = isFullAdmin ? allLinks : limitedLinks;
+
   return (
-    <>
-      {/* Mobile overlay */}
-      {isOpen && (
-        <div
-          className="fixed inset-0 bg-black bg-opacity-50 z-40 lg:hidden"
-          onClick={onClose}
-        />
-      )}
-
-      <aside
-        className={`
-          fixed top-0 left-0 h-full w-64 bg-white border-r border-gray-200 shadow-sm z-50
-          transform transition-transform duration-300 ease-in-out
-          lg:translate-x-0
-          ${isOpen ? 'translate-x-0' : '-translate-x-full'}
-        `}
-      >
-        <div className="flex flex-col h-full">
-          {/* Brand */}
-          <div className="px-6 py-5 border-b border-gray-100">
-            <h1 className="text-xl font-semibold text-blue-700">
-              Coinplus<span className="text-gray-500 font-light">Admin</span>
-            </h1>
-          </div>
-
-          {/* Navigation */}
-          <nav className="flex-1 px-3 py-4 space-y-1 overflow-y-auto">
-            {links.map((link) => {
-              const Icon = link.icon;
-              const isActive = pathname === link.href;
-              return (
-                <Link
-                  key={link.href}
-                  href={link.href}
-                  onClick={onClose}
-                  className={`
-                    flex items-center space-x-3 px-3 py-2 rounded-lg text-sm font-medium transition
-                    ${
-                      isActive
-                        ? 'bg-blue-50 text-blue-700'
-                        : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900'
-                    }
-                  `}
-                >
-                  <Icon className={`w-4 h-4 ${isActive ? 'text-blue-700' : 'text-gray-400'}`} />
-                  <span>{link.label}</span>
-                </Link>
-              );
-            })}
-          </nav>
-
-          {/* Logout */}
-          <div className="px-3 py-4 border-t border-gray-100">
-            <button
-              onClick={() => signOut({ callbackUrl: '/admin-login' })}
-              className="flex items-center space-x-3 w-full px-3 py-2 rounded-lg text-sm font-medium text-red-600 hover:bg-red-50 transition"
+    <aside className="w-64 bg-gray-800 text-white h-screen p-4 fixed">
+      <h1 className="text-2xl font-bold mb-8">
+        Coinplus {role === 'manager' ? 'Manager' : 'Admin'}
+      </h1>
+      <nav className="space-y-2">
+        {links.map((link) => {
+          const Icon = link.icon;
+          return (
+            <Link
+              key={link.href}
+              href={link.href}
+              className={`block px-4 py-2 rounded hover:bg-gray-700 flex items-center space-x-2 ${
+                pathname === link.href ? 'bg-gray-700' : ''
+              }`}
             >
-              <FaSignOutAlt className="w-4 h-4" />
-              <span>Logout</span>
-            </button>
-          </div>
-        </div>
-      </aside>
-    </>
+              <Icon className="w-4 h-4" />
+              <span>{link.label}</span>
+            </Link>
+          );
+        })}
+        <button
+          onClick={() => signOut({ callbackUrl: '/login' })}
+          className="block w-full text-left px-4 py-2 rounded hover:bg-red-600 text-red-400 hover:text-white mt-8 flex items-center space-x-2"
+        >
+          <FaSignOutAlt className="w-4 h-4" />
+          <span>Logout</span>
+        </button>
+      </nav>
+    </aside>
   );
 }

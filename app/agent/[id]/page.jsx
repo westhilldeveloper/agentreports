@@ -112,7 +112,13 @@ export default function AgentDashboard({ params }) {
       </div>
     );
 
-  const { summary, breakdown, monthlyTrend, dailyTrend, history } = data;
+  const { 
+  summary = { totalTarget: 0, totalCollected: 0, totalPending: 0 }, 
+  breakdown = [], 
+  monthlyTrend = [], 
+  dailyTrend = [], 
+  history = [] 
+} = data;
   const { totalTarget, totalCollected, totalPending } = summary;
 
   // Chart Data: Daily trend (bar chart)
