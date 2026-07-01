@@ -78,10 +78,16 @@ export default function AgentsPage() {
   }, [editForm.region_id, areas]);
 
   const handleChange = (e) => {
-    const { name, value } = e.target;
-    setForm({ ...form, [name]: name === 'agent_code' || 'agent_name' ? value.toUpperCase() : value });
-  };
-
+  const { name, value } = e.target;
+  let newValue = value;
+  if (name === 'agent_code') {
+    newValue = value.toUpperCase();
+  } else if (name === 'email') {
+    newValue = value.toLowerCase(); // ✅ store email as lowercase
+  }
+  // name and phone remain as typed
+  setForm({ ...form, [name]: newValue });
+};
   const handleSubmit = async (e) => {
     e.preventDefault();
     setLoading(true);
@@ -122,10 +128,16 @@ export default function AgentsPage() {
     setEditError('');
   };
 
-  const handleEditChange = (e) => {
-    const { name, value } = e.target;
-    setEditForm({ ...editForm, [name]: value });
-  };
+ const handleEditChange = (e) => {
+  const { name, value } = e.target;
+  let newValue = value;
+  if (name === 'agent_code') {
+    newValue = value.toUpperCase();
+  } else if (name === 'email') {
+    newValue = value.toLowerCase();
+  }
+  setEditForm({ ...editForm, [name]: newValue });
+};
 
   const handleUpdate = async (e) => {
     e.preventDefault();

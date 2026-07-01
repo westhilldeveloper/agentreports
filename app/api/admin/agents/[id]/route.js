@@ -13,7 +13,7 @@ export async function PUT(req, { params }) {
 
     const result = await sql`
       UPDATE agents 
-      SET agent_code = ${agent_code}, name = ${name}, phone = ${phone}, email = ${email},
+      SET agent_code = ${agent_code}, name = ${name}, phone = ${phone}, email = LOWER(${email}),
           region_id = ${region_id || null}, area_id = ${area_id || null}
       WHERE id = ${id}
       RETURNING *

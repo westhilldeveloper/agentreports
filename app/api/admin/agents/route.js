@@ -26,7 +26,7 @@ export async function POST(req) {
 
     const result = await sql`
       INSERT INTO agents (agent_code, name, phone, email, region_id, area_id) 
-      VALUES (${agent_code}, ${name}, ${phone}, ${email}, ${region_id || null}, ${area_id || null}) 
+      VALUES (${agent_code}, ${name}, ${phone}, LOWER(${email}), ${region_id || null}, ${area_id || null}) 
       RETURNING *
     `;
     return NextResponse.json({ success: true, data: result[0] });

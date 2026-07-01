@@ -1,5 +1,5 @@
 'use client';
-import { use, useState, useEffect } from 'react';
+import { use, useState, useRef, useEffect } from 'react';
 import { useSession, signOut } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
 import Image from 'next/image'; // ✅ import Image
@@ -16,6 +16,7 @@ import {
 } from 'chart.js';
 import { Bar, Doughnut, Line } from 'react-chartjs-2';
 import { FaBullseye, FaMoneyBillWave, FaClock } from 'react-icons/fa';
+import FlowerExplosion from '@/components/FlowerExplosion';
 
 ChartJS.register(BarElement, CategoryScale, LinearScale, Tooltip, Legend, ArcElement, PointElement, LineElement);
 
@@ -25,6 +26,8 @@ export default function AgentDashboard({ params }) {
   const { data: session } = useSession();
   const [selectedChitId, setSelectedChitId] = useState('');
   const [chitOptions, setChitOptions] = useState([]);
+   const [showExplosion, setShowExplosion] = useState(false);
+  const lastTriggeredMonth = useRef('');
 
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -33,6 +36,25 @@ export default function AgentDashboard({ params }) {
     const now = new Date();
     return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
   });
+
+  useEffect(() => {
+    if (data && data.breakdown) {
+      const monthKey = selectedMonth;
+      if (lastTriggeredMonth.current === monthKey) return;
+
+      const hasCompleted = data.breakdown.some((b) => {
+        const target = b.target || 0;
+        const collected = b.collected || 0;
+        return target > 0 && collected >= target;
+      });
+
+      if (hasCompleted) {
+        setShowExplosion(true);
+        lastTriggeredMonth.current = monthKey;
+        setTimeout(() => setShowExplosion(false), 3500);
+      }
+    }
+  }, [data, selectedMonth]);
 
   useEffect(() => {
     if (data && data.breakdown) {
@@ -185,6 +207,8 @@ export default function AgentDashboard({ params }) {
   );
 
   return (
+    <>
+      <FlowerExplosion active={showExplosion} />
     <div className="min-h-screen bg-gray-50 font-sans">
       {/* Top Navigation */}
       <header className="bg-white border-b border-gray-200 shadow-sm sticky top-0 z-10">
@@ -426,5 +450,6 @@ export default function AgentDashboard({ params }) {
         </footer>
       </main>
     </div>
+    </>
   );
 }

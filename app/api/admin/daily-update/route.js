@@ -114,6 +114,18 @@ export async function POST(req) {
       return NextResponse.json({ success: false, message: 'All fields are required' }, { status: 400 });
     }
 
+    // ✅ Validate agent exists
+    const agentCheck = await sql`SELECT id FROM agents WHERE id = ${agentId}`;
+    if (agentCheck.length === 0) {
+      return NextResponse.json({ success: false, message: 'Agent not found' }, { status: 400 });
+    }
+
+    // ✅ Validate chit exists
+    const chitCheck = await sql`SELECT id FROM chits WHERE id = ${chitId}`;
+    if (chitCheck.length === 0) {
+      return NextResponse.json({ success: false, message: 'Chit not found' }, { status: 400 });
+    }
+
     // 1. Ensure ticket is assigned
     let agentTicketId;
     const existing = await sql`
@@ -157,7 +169,7 @@ export async function POST(req) {
       RETURNING *
     `;
 
-    // 4. Insert into history (for daily trend charts)
+    // 4. Insert into history
     await sql`
       INSERT INTO collection_history (agent_ticket_id, month_year, pending_amount, collected_amount)
       VALUES (${agentTicketId}, ${monthYear}, ${parseFloat(pendingAmount)}, ${collected})

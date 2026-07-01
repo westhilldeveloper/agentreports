@@ -82,11 +82,12 @@ export async function GET(req) {
 
     const totalPending = grandTarget - grandCollected;
 
-    // ---------- 2. Daily Trend ----------
+    // ---------- 2. Daily Trend (aggregated across all agents) ----------
+    // Build the query with correct timezone conversion
     let dailyQuery = `
       WITH daily_totals AS (
         SELECT 
-          DATE(ch.updated_at) as date,
+          DATE(ch.updated_at AT TIME ZONE 'UTC' AT TIME ZONE 'Asia/Kolkata') as date,
           ch.collected_amount,
           LAG(ch.collected_amount) OVER (PARTITION BY ch.agent_ticket_id ORDER BY ch.updated_at) as prev_collected
         FROM collection_history ch
@@ -111,6 +112,7 @@ export async function GET(req) {
     const dailyResult = await sql.query(dailyQuery, dailyParams);
     const dailyRows = dailyResult.rows || dailyResult;
 
+    // Build all dates of the month (for zero‑fill)
     const year = parseInt(monthYear.slice(0, 4));
     const month = parseInt(monthYear.slice(5, 7));
     const daysInMonth = new Date(year, month, 0).getDate();
