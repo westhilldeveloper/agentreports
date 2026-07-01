@@ -55,16 +55,21 @@ export default function ChitsPage() {
   };
 
   // Open edit modal
-  const openEditModal = (chit) => {
-    setEditingChit(chit);
-    setEditName(chit.name);
-    setEditTotalTickets(chit.total_tickets);
-    // Format datetime for input: 'YYYY-MM-DDTHH:mm'
-    const date = new Date(chit.auction_date);
-    const formatted = date.toISOString().slice(0, 16);
-    setEditAuctionDate(formatted);
-    setEditError('');
-  };
+ const openEditModal = (chit) => {
+  setEditingChit(chit);
+  setEditName(chit.name);
+  setEditTotalTickets(chit.total_tickets);
+  // Build local ISO string (YYYY-MM-DDTHH:mm) without UTC conversion
+  const date = new Date(chit.auction_date);
+  const localISO = 
+    date.getFullYear() + '-' +
+    String(date.getMonth() + 1).padStart(2, '0') + '-' +
+    String(date.getDate()).padStart(2, '0') + 'T' +
+    String(date.getHours()).padStart(2, '0') + ':' +
+    String(date.getMinutes()).padStart(2, '0');
+  setEditAuctionDate(localISO);
+  setEditError('');
+};
 
   const closeEditModal = () => {
     setEditingChit(null);
