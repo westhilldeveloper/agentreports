@@ -21,19 +21,19 @@ export async function GET(req, { params }) {
 
     // 1. Get tickets (optionally filtered by chit)
     let ticketsQuery = sql`
-  SELECT at.id as agent_ticket_id, at.ticket_number, c.id as chit_id, c.name as chit_name, c.auction_date
-  FROM agent_tickets at
-  JOIN chits c ON at.chit_id = c.id
-  WHERE at.agent_id = ${agentId}
-`;
-if (chitId) {
-  ticketsQuery = sql`
-    SELECT at.id as agent_ticket_id, at.ticket_number, c.id as chit_id, c.name as chit_name, c.auction_date
-    FROM agent_tickets at
-    JOIN chits c ON at.chit_id = c.id
-    WHERE at.agent_id = ${agentId} AND at.chit_id = ${chitId}
-  `;
-}
+      SELECT at.id as agent_ticket_id, at.ticket_number, c.id as chit_id, c.name as chit_name, c.auction_date
+      FROM agent_tickets at
+      JOIN chits c ON at.chit_id = c.id
+      WHERE at.agent_id = ${agentId}
+    `;
+    if (chitId) {
+      ticketsQuery = sql`
+        SELECT at.id as agent_ticket_id, at.ticket_number, c.id as chit_id, c.name as chit_name, c.auction_date
+        FROM agent_tickets at
+        JOIN chits c ON at.chit_id = c.id
+        WHERE at.agent_id = ${agentId} AND at.chit_id = ${chitId}
+      `;
+    }
     const tickets = await ticketsQuery;
 
     if (tickets.length === 0) {
@@ -44,6 +44,7 @@ if (chitId) {
           breakdown: [],
           monthlyTrend: [],
           dailyTrend: [],
+          history: [],
         },
       });
     }
@@ -132,7 +133,7 @@ if (chitId) {
       LIMIT 6
     `;
 
-    // 4. Daily trend (unchanged)
+    // 4. Daily trend – with timezone fix and TO_CHAR
     const year = parseInt(monthYear.slice(0, 4));
     const month = parseInt(monthYear.slice(5, 7));
     const daysInMonth = new Date(year, month, 0).getDate();
@@ -142,23 +143,13 @@ if (chitId) {
       return `${monthYear.slice(0, 7)}-${day}`;
     });
 
-    let dailyQuery = sql`
-      WITH daily_totals AS (
-        SELECT 
-          DATE(ch.updated_at) as date,
-          ch.agent_ticket_id,
-          ch.collected_amount,
-          LAG(ch.collected_amount) OVER (PARTITION BY ch.agent_ticket_id ORDER BY ch.updated_at) as prev_collected
-        FROM collection_history ch
-        JOIN agent_tickets at ON ch.agent_ticket_id = at.id
-        WHERE at.agent_id = ${agentId}
-          AND ch.month_year = ${monthYear}
-    `;
+    // Build the query with TO_CHAR and timezone conversion
+    let dailyQuery;
     if (chitId) {
       dailyQuery = sql`
         WITH daily_totals AS (
           SELECT 
-            DATE(ch.updated_at) as date,
+            TO_CHAR(DATE(ch.updated_at AT TIME ZONE 'UTC' AT TIME ZONE 'Asia/Kolkata'), 'YYYY-MM-DD') as date,
             ch.agent_ticket_id,
             ch.collected_amount,
             LAG(ch.collected_amount) OVER (PARTITION BY ch.agent_ticket_id ORDER BY ch.updated_at) as prev_collected
@@ -173,12 +164,13 @@ if (chitId) {
           SUM(collected_amount - COALESCE(prev_collected, 0)) as daily_collected
         FROM daily_totals
         GROUP BY date
+        ORDER BY date
       `;
     } else {
       dailyQuery = sql`
         WITH daily_totals AS (
           SELECT 
-            DATE(ch.updated_at) as date,
+            TO_CHAR(DATE(ch.updated_at AT TIME ZONE 'UTC' AT TIME ZONE 'Asia/Kolkata'), 'YYYY-MM-DD') as date,
             ch.agent_ticket_id,
             ch.collected_amount,
             LAG(ch.collected_amount) OVER (PARTITION BY ch.agent_ticket_id ORDER BY ch.updated_at) as prev_collected
@@ -192,6 +184,7 @@ if (chitId) {
           SUM(collected_amount - COALESCE(prev_collected, 0)) as daily_collected
         FROM daily_totals
         GROUP BY date
+        ORDER BY date
       `;
     }
 
@@ -199,8 +192,8 @@ if (chitId) {
 
     const dailyMap = {};
     actualDaily.forEach(row => {
-      const dateStr = row.date.toISOString().slice(0, 10);
-      dailyMap[dateStr] = parseFloat(row.daily_collected) || 0;
+      // row.date is already a string like '2026-07-02'
+      dailyMap[row.date] = parseFloat(row.daily_collected) || 0;
     });
 
     const dailyTrend = allDates.map(date => ({
@@ -208,35 +201,36 @@ if (chitId) {
       collected: dailyMap[date] || 0,
     }));
 
-    // 5. Monthly statement (history of updates for the selected month)
-const history = await sql`
-  WITH history_with_diff AS (
-    SELECT 
-      DATE(ch.updated_at) as date,
-      c.name as chit_name,
-      at.ticket_number,
-      ch.collected_amount,
-      ch.pending_amount,
-      LAG(ch.collected_amount) OVER (
-        PARTITION BY ch.agent_ticket_id 
-        ORDER BY ch.updated_at
-      ) as prev_collected
-    FROM collection_history ch
-    JOIN agent_tickets at ON ch.agent_ticket_id = at.id
-    JOIN chits c ON at.chit_id = c.id
-    WHERE at.agent_id = ${agentId}
-      AND ch.month_year = ${monthYear}
-      ${chitId ? sql`AND at.chit_id = ${chitId}` : sql``}
-  )
-  SELECT 
-    date,
-    chit_name,
-    ticket_number,
-    (collected_amount - COALESCE(prev_collected, 0)) as daily_collected,
-    pending_amount as balance
-  FROM history_with_diff
-  ORDER BY date ASC, ticket_number ASC
-`;
+    // 5. Monthly statement (history) – also fix the date
+    const historyQuery = sql`
+      WITH history_with_diff AS (
+        SELECT 
+          TO_CHAR(DATE(ch.updated_at AT TIME ZONE 'UTC' AT TIME ZONE 'Asia/Kolkata'), 'YYYY-MM-DD') as date,
+          c.name as chit_name,
+          at.ticket_number,
+          ch.collected_amount,
+          ch.pending_amount,
+          LAG(ch.collected_amount) OVER (
+            PARTITION BY ch.agent_ticket_id 
+            ORDER BY ch.updated_at
+          ) as prev_collected
+        FROM collection_history ch
+        JOIN agent_tickets at ON ch.agent_ticket_id = at.id
+        JOIN chits c ON at.chit_id = c.id
+        WHERE at.agent_id = ${agentId}
+          AND ch.month_year = ${monthYear}
+          ${chitId ? sql`AND at.chit_id = ${chitId}` : sql``}
+      )
+      SELECT 
+        date,
+        chit_name,
+        ticket_number,
+        (collected_amount - COALESCE(prev_collected, 0)) as daily_collected,
+        pending_amount as balance
+      FROM history_with_diff
+      ORDER BY date ASC, ticket_number ASC
+    `;
+    const history = await historyQuery;
 
     return NextResponse.json({
       success: true,
@@ -249,11 +243,10 @@ const history = await sql`
         breakdown,
         monthlyTrend: monthlyTrend.reverse(),
         dailyTrend,
-         history,
+        history,
       },
     });
 
-    
   } catch (error) {
     console.error('Agent Dashboard Error:', error);
     return NextResponse.json({ success: false, message: 'Failed to fetch dashboard data' }, { status: 500 });

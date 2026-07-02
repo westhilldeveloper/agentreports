@@ -17,68 +17,77 @@ export async function GET(req) {
     }
 
     // ---------- 1. Summary & Breakdown by Chit ----------
-    let chitTargetsQuery = `
-      SELECT 
-        mt.chit_id,
-        mt.target_amount,
-        ch.name AS chit_name
-      FROM monthly_targets mt
-      JOIN chits ch ON mt.chit_id = ch.id
-      WHERE mt.month_year = $1
-    `;
-    const params = [monthYear];
-    if (chitId) {
-      chitTargetsQuery += ` AND mt.chit_id = $2`;
-      params.push(parseInt(chitId));
-    }
-    const chitTargetsResult = await sql.query(chitTargetsQuery, params);
-    const chitTargets = chitTargetsResult.rows || chitTargetsResult;
+    // ---------- 1. Summary & Breakdown by Chit ----------
+let chitTargetsQuery = `
+  SELECT 
+    mt.chit_id,
+    mt.target_amount,
+    ch.name AS chit_name
+  FROM monthly_targets mt
+  JOIN chits ch ON mt.chit_id = ch.id
+  WHERE mt.month_year = $1
+`;
+const params = [monthYear];
+if (chitId) {
+  chitTargetsQuery += ` AND mt.chit_id = $2`;
+  params.push(parseInt(chitId));
+}
+const chitTargetsResult = await sql.query(chitTargetsQuery, params);
+const chitTargets = chitTargetsResult.rows || chitTargetsResult;
 
-    if (chitTargets.length === 0) {
-      return NextResponse.json({
-        success: true,
-        data: {
-          summary: { totalTarget: 0, totalCollected: 0, totalPending: 0 },
-          dailyTrend: [],
-          breakdown: [],
-          agentsBreakdown: [],
-          monthlyTrend: [],
-        },
-      });
-    }
+if (chitTargets.length === 0) {
+  return NextResponse.json({
+    success: true,
+    data: {
+      summary: { totalTarget: 0, totalCollected: 0, totalPending: 0 },
+      dailyTrend: [],
+      breakdown: [],
+      agentsBreakdown: [],
+      monthlyTrend: [],
+    },
+  });
+}
 
-    let breakdown = [];
-    let grandTarget = 0;
-    let grandCollected = 0;
+let breakdown = [];
+let grandTarget = 0;
+let grandCollected = 0;
 
-    for (const row of chitTargets) {
-      const chitIdVal = row.chit_id;
-      const target = parseFloat(row.target_amount) || 0;
-      const chitName = row.chit_name;
+for (const row of chitTargets) {
+  const chitIdVal = row.chit_id;
+  const targetPerTicket = parseFloat(row.target_amount) || 0;
+  const chitName = row.chit_name;
 
-      let collectedQuery = `
-        SELECT SUM(c.collected_amount) as total_collected
-        FROM collections c
-        JOIN agent_tickets at ON c.agent_ticket_id = at.id
-        WHERE at.chit_id = $1 AND c.month_year = $2
-      `;
-      const collectedParams = [chitIdVal, monthYear];
-      const collectedRes = await sql.query(collectedQuery, collectedParams);
-      const collectedRows = collectedRes.rows || collectedRes;
-      const collected = parseFloat(collectedRows[0]?.total_collected) || 0;
+  // ✅ Count how many tickets are assigned to this chit
+  const ticketCountResult = await sql`
+    SELECT COUNT(*) as count FROM agent_tickets WHERE chit_id = ${chitIdVal}
+  `;
+  const ticketCount = parseInt(ticketCountResult.rows?.[0]?.count ?? ticketCountResult?.[0]?.count ?? 0);
+  const totalTargetForChit = targetPerTicket * ticketCount;
 
-      const pending = target - collected;
-      grandTarget += target;
-      grandCollected += collected;
+  // Collected for this chit (sum of collected_amount across all tickets)
+  let collectedQuery = `
+    SELECT SUM(c.collected_amount) as total_collected
+    FROM collections c
+    JOIN agent_tickets at ON c.agent_ticket_id = at.id
+    WHERE at.chit_id = $1 AND c.month_year = $2
+  `;
+  const collectedParams = [chitIdVal, monthYear];
+  const collectedRes = await sql.query(collectedQuery, collectedParams);
+  const collectedRows = collectedRes.rows || collectedRes;
+  const collected = parseFloat(collectedRows[0]?.total_collected) || 0;
 
-      breakdown.push({
-        chitId: chitIdVal,
-        chitName,
-        target,
-        collected,
-        pending,
-      });
-    }
+  const pending = totalTargetForChit - collected;
+  grandTarget += totalTargetForChit;
+  grandCollected += collected;
+
+  breakdown.push({
+    chitId: chitIdVal,
+    chitName,
+    target: totalTargetForChit,
+    collected,
+    pending,
+  });
+}
 
     const totalPending = grandTarget - grandCollected;
 
@@ -87,7 +96,7 @@ export async function GET(req) {
     let dailyQuery = `
       WITH daily_totals AS (
         SELECT 
-          DATE(ch.updated_at AT TIME ZONE 'UTC' AT TIME ZONE 'Asia/Kolkata') as date,
+          TO_CHAR(DATE(ch.updated_at AT TIME ZONE 'UTC' AT TIME ZONE 'Asia/Kolkata'), 'YYYY-MM-DD') as date,
           ch.collected_amount,
           LAG(ch.collected_amount) OVER (PARTITION BY ch.agent_ticket_id ORDER BY ch.updated_at) as prev_collected
         FROM collection_history ch
@@ -121,11 +130,11 @@ export async function GET(req) {
       return `${monthYear.slice(0, 7)}-${day}`;
     });
 
-    const dailyMap = {};
-    dailyRows.forEach(row => {
-      const dateStr = row.date.toISOString().slice(0, 10);
-      dailyMap[dateStr] = parseFloat(row.daily_collected) || 0;
-    });
+   const dailyMap = {};
+dailyRows.forEach(row => {
+  // row.date is already a string like '2026-07-02'
+  dailyMap[row.date] = parseFloat(row.daily_collected) || 0;
+});
 
     const dailyTrend = allDates.map(date => ({
       date,

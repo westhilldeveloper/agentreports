@@ -1,5 +1,5 @@
 'use client';
-import { useState, useEffect } from 'react';
+import  React, { useState, useEffect } from 'react';
 import {
   Chart as ChartJS,
   BarElement,
@@ -26,6 +26,10 @@ export default function AdminDashboard() {
   const [chitOptions, setChitOptions] = useState([]);
   const [extraStats, setExtraStats] = useState({ agents: 0, chits: 0 });
 
+  const [expandedAgentId, setExpandedAgentId] = useState(null);
+  const [agentTickets, setAgentTickets] = useState({});
+  const [loadingTickets, setLoadingTickets] = useState({});
+
   // Fetch extra stats (total agents, chits)
   useEffect(() => {
     const fetchExtra = async () => {
@@ -40,6 +44,28 @@ export default function AdminDashboard() {
     };
     fetchExtra();
   }, []);
+
+  const toggleAgentDetails = async (agentId) => {
+  if (expandedAgentId === agentId) {
+    setExpandedAgentId(null);
+    return;
+  }
+  // Fetch tickets if not loaded
+  if (!agentTickets[agentId]) {
+    setLoadingTickets(prev => ({ ...prev, [agentId]: true }));
+    try {
+      const res = await fetch(`/api/admin/agent-tickets?agentId=${agentId}&month=${selectedMonth}`);
+      const data = await res.json();
+      if (data.success) {
+        setAgentTickets(prev => ({ ...prev, [agentId]: data.data }));
+      }
+    } catch (err) {
+      console.error('Failed to load tickets');
+    }
+    setLoadingTickets(prev => ({ ...prev, [agentId]: false }));
+  }
+  setExpandedAgentId(agentId);
+};
 
   const fetchDashboard = async () => {
     setLoading(true);
@@ -298,32 +324,74 @@ export default function AdminDashboard() {
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-100">
-              {agentsBreakdown.length === 0 ? (
-                <tr><td colSpan="5" className="px-4 py-4 text-center text-gray-400">No agents with collections.</td></tr>
-              ) : (
-                agentsBreakdown.map((agent) => (
-                  <tr key={agent.agentId} className="hover:bg-gray-50">
-                    <td className="px-4 py-2 font-medium text-gray-800">{agent.agentName} ({agent.agentCode})</td>
-                    <td className="px-4 py-2 text-right text-gray-600">₹{agent.target.toLocaleString()}</td>
-                    <td className="px-4 py-2 text-right text-green-600 font-medium">₹{agent.collected.toLocaleString()}</td>
-                    <td className="px-4 py-2 text-right text-red-600 font-medium">₹{agent.pending.toLocaleString()}</td>
-                    <td className="px-4 py-2 text-right">
-                      <div className="flex items-center justify-end gap-2">
-                        <div className="w-16 bg-gray-200 rounded-full h-1.5">
-                          <div
-                            className="bg-blue-600 h-1.5 rounded-full"
-                            style={{ width: `${agent.target > 0 ? Math.round((agent.collected / agent.target) * 100) : 0}%` }}
-                          ></div>
-                        </div>
-                        <span className="text-xs font-medium text-gray-600">
-                          {agent.target > 0 ? Math.round((agent.collected / agent.target) * 100) : 0}%
-                        </span>
-                      </div>
-                    </td>
-                  </tr>
-                ))
-              )}
-            </tbody>
+  {agentsBreakdown.length === 0 ? (
+    <tr><td colSpan="5" className="px-4 py-4 text-center text-gray-400">No agents with collections.</td></tr>
+  ) : (
+    agentsBreakdown.map((agent) => (
+      <React.Fragment key={agent.agentId}>
+        <tr
+          className="hover:bg-gray-50 cursor-pointer"
+          onClick={() => toggleAgentDetails(agent.agentId)}
+        >
+          <td className="px-4 py-2 font-medium text-gray-800">{agent.agentName} ({agent.agentCode})</td>
+          <td className="px-4 py-2 text-right text-gray-600">₹{agent.target.toLocaleString()}</td>
+          <td className="px-4 py-2 text-right text-green-600 font-medium">₹{agent.collected.toLocaleString()}</td>
+          <td className="px-4 py-2 text-right text-red-600 font-medium">₹{agent.pending.toLocaleString()}</td>
+          <td className="px-4 py-2 text-right">
+            <div className="flex items-center justify-end gap-2">
+              <div className="w-16 bg-gray-200 rounded-full h-1.5">
+                <div
+                  className="bg-blue-600 h-1.5 rounded-full"
+                  style={{ width: `${agent.target > 0 ? Math.round((agent.collected / agent.target) * 100) : 0}%` }}
+                ></div>
+              </div>
+              <span className="text-xs font-medium text-gray-600">
+                {agent.target > 0 ? Math.round((agent.collected / agent.target) * 100) : 0}%
+              </span>
+            </div>
+          </td>
+        </tr>
+        {expandedAgentId === agent.agentId && (
+          <tr>
+            <td colSpan="5" className="px-4 py-2 bg-gray-50">
+              <div className="pl-8">
+                <h4 className="text-xs font-semibold text-gray-600 mb-2">Ticket Details</h4>
+                {loadingTickets[agent.agentId] ? (
+                  <div className="text-xs text-gray-400">Loading...</div>
+                ) : agentTickets[agent.agentId]?.length > 0 ? (
+                  <table className="w-full text-xs">
+                    <thead>
+                      <tr className="text-gray-500">
+                        <th className="px-2 py-1 text-left">Chit</th>
+                        <th className="px-2 py-1 text-left">Ticket</th>
+                        <th className="px-2 py-1 text-right">Target (₹)</th>
+                        <th className="px-2 py-1 text-right">Collected (₹)</th>
+                        <th className="px-2 py-1 text-right">Pending (₹)</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {agentTickets[agent.agentId].map((t, idx) => (
+                        <tr key={idx} className="border-t border-gray-200">
+                          <td className="px-2 py-1">{t.chit_name}</td>
+                          <td className="px-2 py-1">Token {t.ticket_number}</td>
+                          <td className="px-2 py-1 text-right">₹{parseFloat(t.target).toLocaleString()}</td>
+                          <td className="px-2 py-1 text-right text-green-600">₹{parseFloat(t.collected).toLocaleString()}</td>
+                          <td className="px-2 py-1 text-right text-red-600">₹{parseFloat(t.pending).toLocaleString()}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                ) : (
+                  <div className="text-xs text-gray-400">No tickets assigned for this month.</div>
+                )}
+              </div>
+            </td>
+          </tr>
+        )}
+      </React.Fragment>
+    ))
+  )}
+</tbody>
           </table>
         </div>
       </div>
