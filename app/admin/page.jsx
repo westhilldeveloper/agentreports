@@ -110,7 +110,7 @@ export default function AdminDashboard() {
 
   const { summary, dailyTrend, breakdown, agentsBreakdown, monthlyTrend } = data;
   const { totalTarget, totalCollected, totalPending } = summary;
-
+  console.log("daily trend=====>", dailyTrend)
   // Chart Data
   const dailyLabels = dailyTrend.map(d => {
     const parts = d.date.split('-');
@@ -401,7 +401,7 @@ export default function AdminDashboard() {
       </div>
 
       {/* Monthly Trend */}
-      {monthlyTrend.length > 0 && (
+      {/* {monthlyTrend.length > 0 && (
         <div className="bg-white rounded-lg shadow-sm p-4 border border-gray-100 mb-6">
           <h3 className="text-sm font-semibold text-gray-800 mb-3">Monthly Trend (Last 6 months)</h3>
           <div className="h-52">
@@ -415,7 +415,7 @@ export default function AdminDashboard() {
             />
           </div>
         </div>
-      )}
+      )} */}
     </div>
   );
 }

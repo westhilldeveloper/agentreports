@@ -97,51 +97,75 @@ export async function GET(req) {
     const totalPending = grandTarget - grandCollected;
 
     // ---------- 2. Daily Trend (unchanged) ----------
-    let dailyQuery = `
-      WITH daily_totals AS (
-        SELECT 
-          TO_CHAR(DATE(ch.updated_at AT TIME ZONE 'UTC' AT TIME ZONE 'Asia/Kolkata'), 'YYYY-MM-DD') as date,
-          ch.collected_amount,
-          LAG(ch.collected_amount) OVER (PARTITION BY ch.agent_ticket_id ORDER BY ch.updated_at) as prev_collected
-        FROM collection_history ch
-        JOIN agent_tickets at ON ch.agent_ticket_id = at.id
-        WHERE ch.month_year = $1
-    `;
-    const dailyParams = [monthYear];
-    if (chitId) {
-      dailyQuery += ` AND at.chit_id = $2`;
-      dailyParams.push(parseInt(chitId));
-    }
-    dailyQuery += `
-      )
-      SELECT 
-        date,
-        SUM(collected_amount - COALESCE(prev_collected, 0)) as daily_collected
-      FROM daily_totals
-      GROUP BY date
-      ORDER BY date
-    `;
-
-    const dailyResult = await sql.query(dailyQuery, dailyParams);
-    const dailyRows = dailyResult.rows || dailyResult;
-
-    const year = parseInt(monthYear.slice(0, 4));
-    const month = parseInt(monthYear.slice(5, 7));
-    const daysInMonth = new Date(year, month, 0).getDate();
-    const allDates = Array.from({ length: daysInMonth }, (_, i) => {
-      const day = String(i + 1).padStart(2, '0');
-      return `${monthYear.slice(0, 7)}-${day}`;
-    });
-
-    const dailyMap = {};
-    dailyRows.forEach(row => {
-      dailyMap[row.date] = parseFloat(row.daily_collected) || 0;
-    });
-
-    const dailyTrend = allDates.map(date => ({
+    // ---------- 2. Daily Trend (fixed: non-negative daily collections) ----------
+// Build the query with optional chit filter
+let dailyQuery = `
+  WITH daily_last AS (
+    SELECT 
+      TO_CHAR(DATE(ch.updated_at AT TIME ZONE 'UTC' AT TIME ZONE 'Asia/Kolkata'), 'YYYY-MM-DD') as date,
+      ch.agent_ticket_id,
+      ch.collected_amount,
+      ROW_NUMBER() OVER (
+        PARTITION BY ch.agent_ticket_id, DATE(ch.updated_at AT TIME ZONE 'UTC' AT TIME ZONE 'Asia/Kolkata')
+        ORDER BY ch.updated_at DESC
+      ) as rn
+    FROM collection_history ch
+    JOIN agent_tickets at ON ch.agent_ticket_id = at.id
+    WHERE ch.month_year = $1
+`;
+const dailyParams = [monthYear];
+if (chitId) {
+  dailyQuery += ` AND at.chit_id = $2`;
+  dailyParams.push(parseInt(chitId));
+}
+dailyQuery += `
+  ),
+  daily_last_cumulative AS (
+    SELECT date, agent_ticket_id, collected_amount
+    FROM daily_last
+    WHERE rn = 1
+  ),
+  daily_with_prev AS (
+    SELECT 
       date,
-      collected: dailyMap[date] || 0,
-    }));
+      agent_ticket_id,
+      collected_amount,
+      LAG(collected_amount, 1, 0) OVER (
+        PARTITION BY agent_ticket_id 
+        ORDER BY date
+      ) as prev_collected
+    FROM daily_last_cumulative
+  )
+  SELECT 
+    date,
+    SUM(GREATEST(0, collected_amount - prev_collected)) as daily_collected
+  FROM daily_with_prev
+  GROUP BY date
+  ORDER BY date
+`;
+
+const dailyResult = await sql.query(dailyQuery, dailyParams);
+const dailyRows = dailyResult.rows || dailyResult;
+
+// Generate all dates of the month
+const year = parseInt(monthYear.slice(0, 4));
+const month = parseInt(monthYear.slice(5, 7));
+const daysInMonth = new Date(year, month, 0).getDate();
+const allDates = Array.from({ length: daysInMonth }, (_, i) => {
+  const day = String(i + 1).padStart(2, '0');
+  return `${monthYear.slice(0, 7)}-${day}`;
+});
+
+// Map results to all dates (fill missing with 0)
+const dailyMap = {};
+dailyRows.forEach(row => {
+  dailyMap[row.date] = parseFloat(row.daily_collected) || 0;
+});
+
+const dailyTrend = allDates.map(date => ({
+  date,
+  collected: dailyMap[date] || 0,
+}));
 
     // ---------- 3. Agents Breakdown (with opening balance) ----------
     let agentsQuery = `
