@@ -93,12 +93,88 @@ export default function AdminDashboard() {
   }, [selectedMonth, selectedChitId]);
 
   if (loading) {
-    return (
-      <div className="flex justify-center py-12">
-        <div className="w-8 h-8 border-3 border-blue-600 border-t-transparent rounded-full animate-spin"></div>
+  return (
+    <div>
+      {/* Header & Filters */}
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-6">
+        <div>
+          <div className="h-7 w-48 bg-gray-200 rounded animate-pulse"></div>
+          <div className="h-4 w-64 bg-gray-200 rounded mt-1 animate-pulse"></div>
+        </div>
+        <div className="mt-2 sm:mt-0 flex items-center gap-3">
+          <div className="h-9 w-40 bg-gray-200 rounded-lg animate-pulse"></div>
+          <div className="h-9 w-32 bg-gray-200 rounded-lg animate-pulse"></div>
+          <div className="h-9 w-20 bg-gray-200 rounded-lg animate-pulse"></div>
+        </div>
       </div>
-    );
-  }
+
+      {/* 5 Summary Cards */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4 mb-6">
+        {[...Array(5)].map((_, i) => (
+          <div key={i} className="bg-white rounded-lg shadow-sm p-4 border border-gray-100">
+            <div className="flex items-center justify-between">
+              <div>
+                <div className="h-3 w-20 bg-gray-200 rounded animate-pulse"></div>
+                <div className="h-6 w-24 bg-gray-200 rounded mt-1 animate-pulse"></div>
+              </div>
+              <div className="w-10 h-10 bg-gray-200 rounded-full animate-pulse"></div>
+            </div>
+          </div>
+        ))}
+      </div>
+
+      {/* Charts Row */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 mb-6">
+        <div className="bg-white rounded-lg shadow-sm p-4 border border-gray-100">
+          <div className="h-4 w-40 bg-gray-200 rounded mb-3 animate-pulse"></div>
+          <div className="h-52 bg-gray-200 rounded animate-pulse"></div>
+        </div>
+        <div className="bg-white rounded-lg shadow-sm p-4 border border-gray-100 flex flex-col items-center">
+          <div className="h-4 w-32 bg-gray-200 rounded mb-3 animate-pulse"></div>
+          <div className="w-40 h-40 bg-gray-200 rounded-full animate-pulse"></div>
+          <div className="h-4 w-48 bg-gray-200 rounded mt-3 animate-pulse"></div>
+        </div>
+      </div>
+
+      {/* Chit Breakdown */}
+      <div className="bg-white rounded-lg shadow-sm p-4 border border-gray-100 mb-6">
+        <div className="h-4 w-40 bg-gray-200 rounded mb-3 animate-pulse"></div>
+        <div className="h-52 bg-gray-200 rounded animate-pulse"></div>
+      </div>
+
+      {/* Agents Table */}
+      <div className="bg-white rounded-lg shadow-sm border border-gray-100 overflow-hidden mb-6">
+        <div className="px-4 py-3 border-b border-gray-100">
+          <div className="h-4 w-32 bg-gray-200 rounded animate-pulse"></div>
+        </div>
+        <div className="overflow-x-auto max-h-64 overflow-y-auto">
+          <table className="w-full text-xs">
+            <thead className="bg-gray-50">
+              <tr>
+                {['Agent', 'Target', 'Collected', 'Pending', 'Progress'].map((_, i) => (
+                  <th key={i} className="px-4 py-2 text-left">
+                    <div className="h-3 w-16 bg-gray-200 rounded animate-pulse"></div>
+                  </th>
+                ))}
+              </tr>
+            </thead>
+            <tbody>
+              {[...Array(5)].map((_, i) => (
+                <tr key={i} className="border-t">
+                  <td className="px-4 py-2"><div className="h-3 w-24 bg-gray-200 rounded animate-pulse"></div></td>
+                  <td className="px-4 py-2"><div className="h-3 w-16 bg-gray-200 rounded ml-auto animate-pulse"></div></td>
+                  <td className="px-4 py-2"><div className="h-3 w-16 bg-gray-200 rounded ml-auto animate-pulse"></div></td>
+                  <td className="px-4 py-2"><div className="h-3 w-16 bg-gray-200 rounded ml-auto animate-pulse"></div></td>
+                  <td className="px-4 py-2"><div className="h-3 w-20 bg-gray-200 rounded ml-auto animate-pulse"></div></td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  );
+}
 
   if (error) {
     return <div className="text-red-600 text-center py-8">{error}</div>;
