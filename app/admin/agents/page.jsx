@@ -1,5 +1,5 @@
 'use client';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { FaUserPlus, FaUser, FaPhone, FaEnvelope, FaIdBadge, FaEdit, FaTrash, FaTimes, FaMapMarkerAlt } from 'react-icons/fa';
 
 export default function AgentsPage() {
@@ -14,6 +14,7 @@ export default function AgentsPage() {
   });
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+  const [searchTerm, setSearchTerm] = useState('');
 
   // Regions and Areas
   const [regions, setRegions] = useState([]);
@@ -108,6 +109,14 @@ export default function AgentsPage() {
     } catch (err) { setError('Failed to create agent'); }
     setLoading(false);
   };
+
+  const filteredAgents = useMemo(() => {
+  if (!searchTerm.trim()) return agents;
+  const term = searchTerm.toLowerCase().trim();
+  return agents.filter(agent => 
+    agent.name.toLowerCase().includes(term)
+  );
+}, [agents, searchTerm]);
 
   const openEditModal = (agent) => {
     setEditingAgent(agent);
@@ -307,54 +316,75 @@ export default function AgentsPage() {
 
         {/* Agents Table */}
         <div className="bg-white rounded-lg shadow-sm border border-gray-100 overflow-hidden">
-          <div className="px-4 py-3 border-b border-gray-100 flex items-center justify-between">
-            <h2 className="text-sm font-semibold text-gray-800">All Agents</h2>
-            <span className="text-xs text-gray-500">{agents.length} total</span>
-          </div>
-          <div className="overflow-x-auto">
-            <table className="w-full text-xs">
-              <thead className="bg-gray-50 text-gray-600 uppercase tracking-wider">
-                <tr>
-                  <th className="px-4 py-2 text-left">Code</th>
-                  <th className="px-4 py-2 text-left">Name</th>
-                  <th className="px-4 py-2 text-left">Phone</th>
-                  <th className="px-4 py-2 text-left">Email</th>
-                  <th className="px-4 py-2 text-left">Region</th>
-                  <th className="px-4 py-2 text-left">Area</th>
-                  <th className="px-4 py-2 text-center">Actions</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-gray-100">
-                {agents.length === 0 ? (
-                  <tr>
-                    <td colSpan="7" className="px-4 py-4 text-center text-gray-400">No agents created yet.</td>
-                  </tr>
-                ) : (
-                  agents.map((agent) => (
-                    <tr key={agent.id} className="hover:bg-gray-50 transition">
-                      <td className="px-4 py-2.5 font-medium text-gray-800">{agent.agent_code}</td>
-                      <td className="px-4 py-2.5 text-gray-700">{agent.name}</td>
-                      <td className="px-4 py-2.5 text-gray-700">{agent.phone}</td>
-                      <td className="px-4 py-2.5 text-gray-700">{agent.email}</td>
-                      <td className="px-4 py-2.5 text-gray-700">{agent.region_name || '-'}</td>
-                      <td className="px-4 py-2.5 text-gray-700">{agent.area_name || '-'}</td>
-                      <td className="px-4 py-2.5 text-center">
-                        <div className="flex items-center justify-center space-x-2">
-                          <button onClick={() => openEditModal(agent)} className="text-blue-600 hover:text-blue-800 transition p-1 rounded hover:bg-blue-50" title="Edit">
-                            <FaEdit className="w-4 h-4" />
-                          </button>
-                          <button onClick={() => handleDelete(agent.id)} className="text-red-600 hover:text-red-800 transition p-1 rounded hover:bg-red-50" title="Delete">
-                            <FaTrash className="w-4 h-4" />
-                          </button>
-                        </div>
-                      </td>
-                    </tr>
-                  ))
-                )}
-              </tbody>
-            </table>
-          </div>
-        </div>
+  <div className="px-4 py-3 border-b border-gray-100 flex flex-wrap items-center justify-between gap-3">
+    <h2 className="text-sm font-semibold text-gray-800">All Agents</h2>
+    <div className="flex items-center gap-3 flex-wrap">
+      <div className="relative">
+        <input
+          type="text"
+          placeholder="Search by name..."
+          value={searchTerm}
+          onChange={(e) => setSearchTerm(e.target.value)}
+          className="w-48 sm:w-56 border border-gray-200 rounded-lg px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+        />
+      </div>
+      <span className="text-xs text-gray-500">{filteredAgents.length} / {agents.length}</span>
+    </div>
+  </div>
+  <div className="overflow-x-auto overflow-y-auto max-h-64">
+    <table className="w-full text-xs">
+      <thead className="bg-gray-50 text-gray-600 uppercase tracking-wider sticky top-0 z-10 shadow-sm">
+        <tr>
+          <th className="px-4 py-2 text-left">Code</th>
+          <th className="px-4 py-2 text-left">Name</th>
+          <th className="px-4 py-2 text-left">Phone</th>
+          <th className="px-4 py-2 text-left">Email</th>
+          <th className="px-4 py-2 text-left">Region</th>
+          <th className="px-4 py-2 text-left">Area</th>
+          <th className="px-4 py-2 text-center">Actions</th>
+        </tr>
+      </thead>
+      <tbody className="divide-y divide-gray-100">
+        {filteredAgents.length === 0 ? (
+          <tr>
+            <td colSpan="7" className="px-4 py-4 text-center text-gray-400">
+              {searchTerm ? 'No agents match your search.' : 'No agents created yet.'}
+            </td>
+          </tr>
+        ) : (
+          filteredAgents.map((agent) => (
+            <tr key={agent.id} className="hover:bg-gray-50 transition">
+              <td className="px-4 py-2.5 font-medium text-gray-800">{agent.agent_code}</td>
+              <td className="px-4 py-2.5 text-gray-700">{agent.name}</td>
+              <td className="px-4 py-2.5 text-gray-700">{agent.phone}</td>
+              <td className="px-4 py-2.5 text-gray-700">{agent.email}</td>
+              <td className="px-4 py-2.5 text-gray-700">{agent.region_name || '-'}</td>
+              <td className="px-4 py-2.5 text-gray-700">{agent.area_name || '-'}</td>
+              <td className="px-4 py-2.5 text-center">
+                <div className="flex items-center justify-center space-x-2">
+                  <button
+                    onClick={() => openEditModal(agent)}
+                    className="text-blue-600 hover:text-blue-800 transition p-1 rounded hover:bg-blue-50"
+                    title="Edit"
+                  >
+                    <FaEdit className="w-4 h-4" />
+                  </button>
+                  <button
+                    onClick={() => handleDelete(agent.id)}
+                    className="text-red-600 hover:text-red-800 transition p-1 rounded hover:bg-red-50"
+                    title="Delete"
+                  >
+                    <FaTrash className="w-4 h-4" />
+                  </button>
+                </div>
+              </td>
+            </tr>
+          ))
+        )}
+      </tbody>
+    </table>
+  </div>
+</div>
       </div>
 
       {/* Edit Modal */}

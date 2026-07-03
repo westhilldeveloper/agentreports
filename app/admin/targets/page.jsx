@@ -1,5 +1,5 @@
 'use client';
-import { useState, useEffect } from 'react';
+import { useState, useEffect,useMemo } from 'react';
 import { FaBullseye, FaCalendarAlt, FaDollarSign, FaPlus, FaList, FaEdit, FaTrash, FaTimes } from 'react-icons/fa';
 
 export default function TargetsPage() {
@@ -8,7 +8,7 @@ export default function TargetsPage() {
   const [form, setForm] = useState({ chit_id: '', month_year: '', target_amount: '' });
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
-
+  const [searchTerm, setSearchTerm] = useState('');
   // For edit modal
   const [editingTarget, setEditingTarget] = useState(null);
   const [editForm, setEditForm] = useState({ chit_id: '', month_year: '', target_amount: '' });
@@ -76,6 +76,14 @@ export default function TargetsPage() {
     setEditForm({ chit_id: '', month_year: '', target_amount: '' });
     setEditError('');
   };
+
+  const filteredTargets = useMemo(() => {
+  if (!searchTerm.trim()) return targets;
+  const term = searchTerm.toLowerCase().trim();
+  return targets.filter(t => 
+    t.chit_name.toLowerCase().includes(term)
+  );
+}, [targets, searchTerm]);
 
   const handleEditChange = (e) => {
     setEditForm({ ...editForm, [e.target.name]: e.target.value });
@@ -216,62 +224,73 @@ export default function TargetsPage() {
 
         {/* Targets Table */}
         <div className="bg-white rounded-lg shadow-sm border border-gray-100 overflow-hidden">
-          <div className="px-4 py-3 border-b border-gray-100 flex items-center justify-between">
-            <h2 className="text-sm font-semibold text-gray-800">All Targets</h2>
-            <span className="text-xs text-gray-500">{targets.length} total</span>
-          </div>
-          <div className="overflow-x-auto">
-            <table className="w-full text-xs">
-              <thead className="bg-gray-50 text-gray-600 uppercase tracking-wider">
-                <tr>
-                  <th className="px-4 py-2 text-left font-medium">Chit</th>
-                  <th className="px-4 py-2 text-left font-medium">Month</th>
-                  <th className="px-4 py-2 text-right font-medium">Target (₹)</th>
-                  <th className="px-4 py-2 text-center font-medium">Actions</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-gray-100">
-                {targets.length === 0 ? (
-                  <tr>
-                    <td colSpan="4" className="px-4 py-4 text-center text-gray-400 text-xs">
-                      No targets set yet.
-                    </td>
-                  </tr>
-                ) : (
-                  targets.map((t) => (
-                    <tr key={t.id} className="hover:bg-gray-50 transition">
-                      <td className="px-4 py-2.5 font-medium text-gray-800">{t.chit_name}</td>
-                      <td className="px-4 py-2.5 text-gray-700">
-                        {new Date(t.month_year).toLocaleString('en-GB', { month: 'long', year: 'numeric' })}
-                      </td>
-                      <td className="px-4 py-2.5 text-right font-medium text-gray-800">
-                        ₹{parseFloat(t.target_amount).toLocaleString()}
-                      </td>
-                      <td className="px-4 py-2.5 text-center">
-                        <div className="flex items-center justify-center space-x-2">
-                          <button
-                            onClick={() => openEditModal(t)}
-                            className="text-blue-600 hover:text-blue-800 transition p-1 rounded hover:bg-blue-50"
-                            title="Edit"
-                          >
-                            <FaEdit className="w-4 h-4" />
-                          </button>
-                          <button
-                            onClick={() => handleDelete(t.id)}
-                            className="text-red-600 hover:text-red-800 transition p-1 rounded hover:bg-red-50"
-                            title="Delete"
-                          >
-                            <FaTrash className="w-4 h-4" />
-                          </button>
-                        </div>
-                      </td>
-                    </tr>
-                  ))
-                )}
-              </tbody>
-            </table>
-          </div>
-        </div>
+  <div className="px-4 py-3 border-b border-gray-100 flex flex-wrap items-center justify-between gap-3">
+    <h2 className="text-sm font-semibold text-gray-800">All Targets</h2>
+    <div className="flex items-center gap-3 flex-wrap">
+      <div className="relative">
+        <input
+          type="text"
+          placeholder="Search by chit name..."
+          value={searchTerm}
+          onChange={(e) => setSearchTerm(e.target.value)}
+          className="w-48 sm:w-56 border border-gray-200 rounded-lg px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+        />
+      </div>
+      <span className="text-xs text-gray-500">{filteredTargets.length} / {targets.length}</span>
+    </div>
+  </div>
+  <div className="overflow-x-auto overflow-y-auto max-h-64">
+    <table className="w-full text-xs">
+      <thead className="bg-gray-50 text-gray-600 uppercase tracking-wider sticky top-0 z-10 shadow-sm">
+        <tr>
+          <th className="px-4 py-2 text-left font-medium">Chit</th>
+          <th className="px-4 py-2 text-left font-medium">Month</th>
+          <th className="px-4 py-2 text-right font-medium">Target (₹)</th>
+          <th className="px-4 py-2 text-center font-medium">Actions</th>
+        </tr>
+      </thead>
+      <tbody className="divide-y divide-gray-100">
+        {filteredTargets.length === 0 ? (
+          <tr>
+            <td colSpan="4" className="px-4 py-4 text-center text-gray-400 text-xs">
+              {searchTerm ? 'No targets match your search.' : 'No targets set yet.'}
+            </td>
+          </tr>
+        ) : (
+          filteredTargets.map((t) => (
+            <tr key={t.id} className="hover:bg-gray-50 transition">
+              <td className="px-4 py-2.5 font-medium text-gray-800">{t.chit_name}</td>
+              <td className="px-4 py-2.5 text-gray-700">
+                {new Date(t.month_year).toLocaleString('en-GB', { month: 'long', year: 'numeric' })}
+              </td>
+              <td className="px-4 py-2.5 text-right font-medium text-gray-800">
+                ₹{parseFloat(t.target_amount).toLocaleString()}
+              </td>
+              <td className="px-4 py-2.5 text-center">
+                <div className="flex items-center justify-center space-x-2">
+                  <button
+                    onClick={() => openEditModal(t)}
+                    className="text-blue-600 hover:text-blue-800 transition p-1 rounded hover:bg-blue-50"
+                    title="Edit"
+                  >
+                    <FaEdit className="w-4 h-4" />
+                  </button>
+                  <button
+                    onClick={() => handleDelete(t.id)}
+                    className="text-red-600 hover:text-red-800 transition p-1 rounded hover:bg-red-50"
+                    title="Delete"
+                  >
+                    <FaTrash className="w-4 h-4" />
+                  </button>
+                </div>
+              </td>
+            </tr>
+          ))
+        )}
+      </tbody>
+    </table>
+  </div>
+</div>
       </div>
 
       {/* Edit Modal */}

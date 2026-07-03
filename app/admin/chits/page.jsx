@@ -179,64 +179,65 @@ export default function ChitsPage() {
         </div>
 
         {/* Chits Table */}
-        <div className="bg-white rounded-lg shadow-sm border border-gray-100 overflow-hidden">
-          <div className="px-4 py-3 border-b border-gray-100 flex items-center justify-between">
-            <h2 className="text-sm font-semibold text-gray-800">All Chits</h2>
-            <span className="text-xs text-gray-500">{chits.length} total</span>
-          </div>
-          <div className="overflow-x-auto">
-            <table className="w-full text-xs">
-              <thead className="bg-gray-50 text-gray-600 uppercase tracking-wider">
-                <tr>
-                  <th className="px-4 py-2 text-left">ID</th>
-                  <th className="px-4 py-2 text-left">Name</th>
-                  <th className="px-4 py-2 text-left">Tickets</th>
-                  <th className="px-4 py-2 text-left">Auction Date</th>
-                  <th className="px-4 py-2 text-left">Created</th>
-                  <th className="px-4 py-2 text-center">Actions</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-gray-100">
-                {chits.length === 0 ? (
-                  <tr>
-                    <td colSpan="6" className="px-4 py-4 text-center text-gray-400">No chits created yet.</td>
-                  </tr>
-                ) : (
-                  chits.map((chit) => (
-                    <tr key={chit.id} className="hover:bg-gray-50 transition">
-                      <td className="px-4 py-2.5 font-medium text-gray-800">{chit.id}</td>
-                      <td className="px-4 py-2.5 text-gray-700">{chit.name}</td>
-                      <td className="px-4 py-2.5 text-gray-700">{chit.total_tickets}</td>
-                      <td className="px-4 py-2.5 text-gray-700">
-  <div className="flex items-center space-x-1">
-    <FaClock className="w-3 h-3 text-gray-400" />
-    <span>{new Date(chit.auction_date).toLocaleString('en-GB')}</span>
-  </div>
-</td>
-
-<td className="px-4 py-2.5 text-gray-500">
-  <div className="flex items-center space-x-1">
-    <FaCalendarAlt className="w-3 h-3 text-gray-400" />
-    <span>{new Date(chit.created_at).toLocaleDateString('en-GB')}</span>
-  </div>
-</td>
-                      <td className="px-4 py-2.5 text-center">
-                        <div className="flex items-center justify-center space-x-2">
-                          <button onClick={() => openEditModal(chit)} className="text-blue-600 hover:text-blue-800 transition p-1 rounded hover:bg-blue-50" title="Edit">
-                            <FaEdit className="w-4 h-4" />
-                          </button>
-                          <button onClick={() => handleDelete(chit.id)} className="text-red-600 hover:text-red-800 transition p-1 rounded hover:bg-red-50" title="Delete">
-                            <FaTrash className="w-4 h-4" />
-                          </button>
-                        </div>
-                      </td>
-                    </tr>
-                  ))
-                )}
-              </tbody>
-            </table>
-          </div>
-        </div>
+        <div className="overflow-x-auto overflow-y-auto max-h-64 border-t border-gray-100">
+  <table className="w-full text-xs">
+    <thead className="bg-gray-50 text-gray-600 uppercase tracking-wider sticky top-0 z-10 shadow-sm">
+      <tr>
+        <th className="px-4 py-2 text-left">ID</th>
+        <th className="px-4 py-2 text-left">Name</th>
+        <th className="px-4 py-2 text-left">Tickets</th>
+        <th className="px-4 py-2 text-left">Auction Date</th>
+        <th className="px-4 py-2 text-left">Created</th>
+        <th className="px-4 py-2 text-center">Actions</th>
+      </tr>
+    </thead>
+    <tbody className="divide-y divide-gray-100">
+      {chits.length === 0 ? (
+        <tr>
+          <td colSpan="6" className="px-4 py-4 text-center text-gray-400">No chits created yet.</td>
+        </tr>
+      ) : (
+        chits.map((chit) => (
+          <tr key={chit.id} className="hover:bg-gray-50 transition">
+            <td className="px-4 py-2.5 font-medium text-gray-800">{chit.id}</td>
+            <td className="px-4 py-2.5 text-gray-700">{chit.name}</td>
+            <td className="px-4 py-2.5 text-gray-700">{chit.total_tickets}</td>
+            <td className="px-4 py-2.5 text-gray-700">
+              <div className="flex items-center space-x-1">
+                <FaClock className="w-3 h-3 text-gray-400" />
+                <span>{new Date(chit.auction_date).toLocaleString('en-GB')}</span>
+              </div>
+            </td>
+            <td className="px-4 py-2.5 text-gray-500">
+              <div className="flex items-center space-x-1">
+                <FaCalendarAlt className="w-3 h-3 text-gray-400" />
+                <span>{new Date(chit.created_at).toLocaleDateString('en-GB')}</span>
+              </div>
+            </td>
+            <td className="px-4 py-2.5 text-center">
+              <div className="flex items-center justify-center space-x-2">
+                <button
+                  onClick={() => openEditModal(chit)}
+                  className="text-blue-600 hover:text-blue-800 transition p-1 rounded hover:bg-blue-50"
+                  title="Edit"
+                >
+                  <FaEdit className="w-4 h-4" />
+                </button>
+                <button
+                  onClick={() => handleDelete(chit.id)}
+                  className="text-red-600 hover:text-red-800 transition p-1 rounded hover:bg-red-50"
+                  title="Delete"
+                >
+                  <FaTrash className="w-4 h-4" />
+                </button>
+              </div>
+            </td>
+          </tr>
+        ))
+      )}
+    </tbody>
+  </table>
+</div>
       </div>
 
       {/* Edit Modal */}
