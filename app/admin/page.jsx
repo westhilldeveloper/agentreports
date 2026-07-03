@@ -352,42 +352,46 @@ export default function AdminDashboard() {
           </td>
         </tr>
         {expandedAgentId === agent.agentId && (
-          <tr>
-            <td colSpan="5" className="px-4 py-2 bg-gray-50">
-              <div className="pl-8">
-                <h4 className="text-xs font-semibold text-gray-600 mb-2">Ticket Details</h4>
-                {loadingTickets[agent.agentId] ? (
-                  <div className="text-xs text-gray-400">Loading...</div>
-                ) : agentTickets[agent.agentId]?.length > 0 ? (
-                  <table className="w-full text-xs">
-                    <thead>
-                      <tr className="text-gray-500">
-                        <th className="px-2 py-1 text-left">Chit</th>
-                        <th className="px-2 py-1 text-left">Ticket</th>
-                        <th className="px-2 py-1 text-right">Target (₹)</th>
-                        <th className="px-2 py-1 text-right">Collected (₹)</th>
-                        <th className="px-2 py-1 text-right">Pending (₹)</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {agentTickets[agent.agentId].map((t, idx) => (
-                        <tr key={idx} className="border-t border-gray-200">
-                          <td className="px-2 py-1">{t.chit_name}</td>
-                          <td className="px-2 py-1">Token {t.ticket_number}</td>
-                          <td className="px-2 py-1 text-right">₹{parseFloat(t.target).toLocaleString()}</td>
-                          <td className="px-2 py-1 text-right text-green-600">₹{parseFloat(t.collected).toLocaleString()}</td>
-                          <td className="px-2 py-1 text-right text-red-600">₹{parseFloat(t.pending).toLocaleString()}</td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                ) : (
-                  <div className="text-xs text-gray-400">No tickets assigned for this month.</div>
-                )}
-              </div>
-            </td>
-          </tr>
+  <tr>
+    <td colSpan="5" className="px-4 py-2 bg-gray-50">
+      <div className="pl-8">
+        <h4 className="text-xs font-semibold text-gray-600 mb-2">Ticket Details</h4>
+        {loadingTickets[agent.agentId] ? (
+          <div className="text-xs text-gray-400">Loading...</div>
+        ) : agentTickets[agent.agentId]?.length > 0 ? (
+          <table className="w-full text-xs">
+            <thead>
+              <tr className="text-gray-500">
+                <th className="px-2 py-1 text-left">Chit</th>
+                <th className="px-2 py-1 text-left">Ticket</th>
+                <th className="px-2 py-1 text-right">Monthly Target (₹)</th>
+                <th className="px-2 py-1 text-right">Opening Balance (₹)</th>
+                <th className="px-2 py-1 text-right">Total Target (₹)</th>
+                <th className="px-2 py-1 text-right">Collected (₹)</th>
+                <th className="px-2 py-1 text-right">Pending (₹)</th>
+              </tr>
+            </thead>
+            <tbody>
+              {agentTickets[agent.agentId].map((t, idx) => (
+                <tr key={idx} className="border-t border-gray-200">
+                  <td className="px-2 py-1">{t.chit_name}</td>
+                  <td className="px-2 py-1">Token {t.ticket_number}</td>
+                  <td className="px-2 py-1 text-right">₹{parseFloat(t.monthly_target || 0).toLocaleString()}</td>
+                  <td className="px-2 py-1 text-right text-amber-600">₹{parseFloat(t.opening_balance || 0).toLocaleString()}</td>
+                  <td className="px-2 py-1 text-right font-semibold">₹{parseFloat(t.total_target || 0).toLocaleString()}</td>
+                  <td className="px-2 py-1 text-right text-green-600">₹{parseFloat(t.collected || 0).toLocaleString()}</td>
+                  <td className="px-2 py-1 text-right text-red-600 font-semibold">₹{parseFloat(t.pending || 0).toLocaleString()}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        ) : (
+          <div className="text-xs text-gray-400">No tickets assigned for this month.</div>
         )}
+      </div>
+    </td>
+  </tr>
+)}
       </React.Fragment>
     ))
   )}

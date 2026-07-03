@@ -194,17 +194,18 @@ export default function AgentDashboard({ params }) {
   };
 
   // Flatten breakdown for detailed table
-  const ticketDetails = breakdown.flatMap((b) =>
-    b.tickets.map((t) => ({
-      chitName: b.chitName,
-      ticketNumber: t.ticketNumber,
-      auctionDate: b.auctionDate,
-      target: t.target,
-      collected: t.collected,
-      pending: t.pending,
-      progress: t.target > 0 ? Math.round((t.collected / t.target) * 100) : 0,
-    }))
-  );
+ const ticketDetails = breakdown.flatMap((b) =>
+  b.tickets.map((t) => ({
+    chitName: b.chitName,
+    ticketNumber: t.ticketNumber,
+    auctionDate: b.auctionDate,
+    openingBalance: t.openingBalance ?? 0,   // 👈 new field
+    target: t.target,
+    collected: t.collected,
+    pending: t.pending,
+    progress: t.target > 0 ? Math.round((t.collected / t.target) * 100) : 0,
+  }))
+);
 
   return (
     <>
@@ -345,6 +346,7 @@ export default function AgentDashboard({ params }) {
                 <tr>
                   <th className="px-4 py-2 text-left">Chit</th>
                   <th className="px-4 py-2 text-left">Ticket</th>
+                   <th className="px-4 py-2 text-left">Opening Balance (₹)</th> 
                   <th className="px-4 py-2 text-left">Auction Date</th>
                   <th className="px-4 py-2 text-right">Target (₹)</th>
                   <th className="px-4 py-2 text-right">Collected (₹)</th>
@@ -364,6 +366,9 @@ export default function AgentDashboard({ params }) {
                     <tr key={idx} className="hover:bg-gray-50 transition">
                       <td className="px-4 py-2.5 font-medium text-gray-800">{t.chitName}</td>
                       <td className="px-4 py-2.5 text-gray-600">Token {t.ticketNumber}</td>
+                      <td className="px-4 py-2.5 text-center text-amber-600">
+  ₹{parseFloat(t.openingBalance || 0).toLocaleString()}
+</td>
                       <td className="px-4 py-2.5 text-gray-600">
                         {t.auctionDate ? new Date(t.auctionDate).toLocaleString('en-GB', {
                           day: '2-digit',

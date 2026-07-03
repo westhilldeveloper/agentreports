@@ -21,14 +21,14 @@ export async function GET(req, { params }) {
 
     // 1. Get tickets (optionally filtered by chit)
     let ticketsQuery = sql`
-      SELECT at.id as agent_ticket_id, at.ticket_number, c.id as chit_id, c.name as chit_name, c.auction_date
+      SELECT at.id as agent_ticket_id, at.ticket_number, c.id as chit_id, c.name as chit_name, c.auction_date,at.opening_balance
       FROM agent_tickets at
       JOIN chits c ON at.chit_id = c.id
       WHERE at.agent_id = ${agentId}
     `;
     if (chitId) {
       ticketsQuery = sql`
-        SELECT at.id as agent_ticket_id, at.ticket_number, c.id as chit_id, c.name as chit_name, c.auction_date
+        SELECT at.id as agent_ticket_id, at.ticket_number, c.id as chit_id, c.name as chit_name, c.auction_date,at.opening_balance
         FROM agent_tickets at
         JOIN chits c ON at.chit_id = c.id
         WHERE at.agent_id = ${agentId} AND at.chit_id = ${chitId}
@@ -54,6 +54,7 @@ export async function GET(req, { params }) {
     let currentMonthTargetTotal = 0;
     let currentMonthCollectedTotal = 0;
     let cumulativePendingTotal = 0;
+    let totalTargetWithOpening = 0; 
 
     for (const ticket of tickets) {
       // ---- Current month target ----
@@ -85,12 +86,14 @@ export async function GET(req, { params }) {
       const cumCollected = cumCollectedResult.length > 0 ? parseFloat(cumCollectedResult[0].total) || 0 : 0;
 
       // ---- Pending = cumulative target - cumulative collected (carryover) ----
-      const pending = cumTarget - cumCollected;
+      const openingBalance = parseFloat(ticket.opening_balance) || 0;
+      const pending = openingBalance + cumTarget - cumCollected;
 
       // ---- Aggregate summary totals ----
       currentMonthTargetTotal += currentTarget;
       currentMonthCollectedTotal += currentCollected;
       cumulativePendingTotal += pending;
+      totalTargetWithOpening += currentTarget + openingBalance;
 
       // ---- Build breakdown entry ----
       const chitKey = ticket.chit_name;
@@ -114,6 +117,7 @@ export async function GET(req, { params }) {
         target: currentTarget,
         collected: currentCollected,
         pending: pending,
+        openingBalance,
       });
     }
 
@@ -203,40 +207,65 @@ export async function GET(req, { params }) {
 
     // 5. Monthly statement (history) – also fix the date
     const historyQuery = sql`
-      WITH history_with_diff AS (
-        SELECT 
-          TO_CHAR(DATE(ch.updated_at AT TIME ZONE 'UTC' AT TIME ZONE 'Asia/Kolkata'), 'YYYY-MM-DD') as date,
-          c.name as chit_name,
-          at.ticket_number,
-          ch.collected_amount,
-          ch.pending_amount,
-          LAG(ch.collected_amount) OVER (
-            PARTITION BY ch.agent_ticket_id 
-            ORDER BY ch.updated_at
-          ) as prev_collected
-        FROM collection_history ch
-        JOIN agent_tickets at ON ch.agent_ticket_id = at.id
-        JOIN chits c ON at.chit_id = c.id
-        WHERE at.agent_id = ${agentId}
-          AND ch.month_year = ${monthYear}
-          ${chitId ? sql`AND at.chit_id = ${chitId}` : sql``}
-      )
-      SELECT 
-        date,
-        chit_name,
-        ticket_number,
-        (collected_amount - COALESCE(prev_collected, 0)) as daily_collected,
-        pending_amount as balance
-      FROM history_with_diff
-      ORDER BY date ASC, ticket_number ASC
-    `;
+      -- Instead of the current historyQuery, use:
+WITH ticket_opening AS (
+  SELECT 
+    at.id as agent_ticket_id,
+    at.ticket_number,
+    c.name as chit_name,
+    at.opening_balance,
+    COALESCE(
+      (SELECT SUM(mt.target_amount) 
+       FROM monthly_targets mt 
+       WHERE mt.chit_id = at.chit_id 
+         AND mt.month_year < ${monthYear}), 0
+    ) as cum_target_before,
+    COALESCE(
+      (SELECT SUM(col.collected_amount) 
+       FROM collections col 
+       WHERE col.agent_ticket_id = at.id 
+         AND col.month_year < ${monthYear}), 0
+    ) as cum_collected_before
+  FROM agent_tickets at
+  JOIN chits c ON at.chit_id = c.id
+  WHERE at.agent_id = ${agentId}
+    ${chitId ? sql`AND at.chit_id = ${chitId}` : sql``}
+),
+history_with_diff AS (
+  SELECT 
+    TO_CHAR(DATE(ch.updated_at AT TIME ZONE 'UTC' AT TIME ZONE 'Asia/Kolkata'), 'YYYY-MM-DD') as date,
+    to_ticket.chit_name,
+    to_ticket.ticket_number,
+    ch.collected_amount,
+    ch.pending_amount,
+    LAG(ch.collected_amount) OVER (
+      PARTITION BY ch.agent_ticket_id 
+      ORDER BY ch.updated_at
+    ) as prev_collected,
+    to_ticket.opening_balance,
+    to_ticket.cum_target_before,
+    to_ticket.cum_collected_before
+  FROM collection_history ch
+  JOIN ticket_opening to_ticket ON ch.agent_ticket_id = to_ticket.agent_ticket_id
+  WHERE ch.month_year = ${monthYear}
+)
+SELECT 
+  date,
+  chit_name,
+  ticket_number,
+  (collected_amount - COALESCE(prev_collected, 0)) as daily_collected,
+  pending_amount as balance,
+  -- opening balance for the month = opening_balance + cum_target_before - cum_collected_before
+  (opening_balance + cum_target_before - cum_collected_before) as opening_balance
+FROM history_with_diff
+ORDER BY date ASC, ticket_number ASC`;
     const history = await historyQuery;
 
     return NextResponse.json({
       success: true,
       data: {
         summary: {
-          totalTarget: currentMonthTargetTotal,
+          totalTarget: totalTargetWithOpening,
           totalCollected: currentMonthCollectedTotal,
           totalPending: cumulativePendingTotal,
         },

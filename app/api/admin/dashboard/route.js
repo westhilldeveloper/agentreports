@@ -17,82 +17,86 @@ export async function GET(req) {
     }
 
     // ---------- 1. Summary & Breakdown by Chit ----------
-    // ---------- 1. Summary & Breakdown by Chit ----------
-let chitTargetsQuery = `
-  SELECT 
-    mt.chit_id,
-    mt.target_amount,
-    ch.name AS chit_name
-  FROM monthly_targets mt
-  JOIN chits ch ON mt.chit_id = ch.id
-  WHERE mt.month_year = $1
-`;
-const params = [monthYear];
-if (chitId) {
-  chitTargetsQuery += ` AND mt.chit_id = $2`;
-  params.push(parseInt(chitId));
-}
-const chitTargetsResult = await sql.query(chitTargetsQuery, params);
-const chitTargets = chitTargetsResult.rows || chitTargetsResult;
+    // Query: chit target per ticket + sum of opening balances
+    let chitTargetsQuery = `
+      SELECT 
+        mt.chit_id,
+        mt.target_amount,
+        ch.name AS chit_name,
+        COALESCE(SUM(at.opening_balance), 0) AS total_opening_balance,
+        COUNT(at.id) AS ticket_count
+      FROM monthly_targets mt
+      JOIN chits ch ON mt.chit_id = ch.id
+      LEFT JOIN agent_tickets at ON at.chit_id = ch.id
+      WHERE mt.month_year = $1
+    `;
+    const params = [monthYear];
+    if (chitId) {
+      chitTargetsQuery += ` AND mt.chit_id = $2`;
+      params.push(parseInt(chitId));
+    }
+    chitTargetsQuery += `
+      GROUP BY mt.chit_id, mt.target_amount, ch.name
+    `;
 
-if (chitTargets.length === 0) {
-  return NextResponse.json({
-    success: true,
-    data: {
-      summary: { totalTarget: 0, totalCollected: 0, totalPending: 0 },
-      dailyTrend: [],
-      breakdown: [],
-      agentsBreakdown: [],
-      monthlyTrend: [],
-    },
-  });
-}
+    const chitTargetsResult = await sql.query(chitTargetsQuery, params);
+    const chitTargets = chitTargetsResult.rows || chitTargetsResult;
 
-let breakdown = [];
-let grandTarget = 0;
-let grandCollected = 0;
+    if (chitTargets.length === 0) {
+      return NextResponse.json({
+        success: true,
+        data: {
+          summary: { totalTarget: 0, totalCollected: 0, totalPending: 0 },
+          dailyTrend: [],
+          breakdown: [],
+          agentsBreakdown: [],
+          monthlyTrend: [],
+        },
+      });
+    }
 
-for (const row of chitTargets) {
-  const chitIdVal = row.chit_id;
-  const targetPerTicket = parseFloat(row.target_amount) || 0;
-  const chitName = row.chit_name;
+    let breakdown = [];
+    let grandTarget = 0;
+    let grandCollected = 0;
 
-  // ✅ Count how many tickets are assigned to this chit
-  const ticketCountResult = await sql`
-    SELECT COUNT(*) as count FROM agent_tickets WHERE chit_id = ${chitIdVal}
-  `;
-  const ticketCount = parseInt(ticketCountResult.rows?.[0]?.count ?? ticketCountResult?.[0]?.count ?? 0);
-  const totalTargetForChit = targetPerTicket * ticketCount;
+    for (const row of chitTargets) {
+      const chitIdVal = row.chit_id;
+      const targetPerTicket = parseFloat(row.target_amount) || 0;
+      const chitName = row.chit_name;
+      const ticketCount = parseInt(row.ticket_count) || 0;
+      const totalOpeningBalance = parseFloat(row.total_opening_balance) || 0;
 
-  // Collected for this chit (sum of collected_amount across all tickets)
-  let collectedQuery = `
-    SELECT SUM(c.collected_amount) as total_collected
-    FROM collections c
-    JOIN agent_tickets at ON c.agent_ticket_id = at.id
-    WHERE at.chit_id = $1 AND c.month_year = $2
-  `;
-  const collectedParams = [chitIdVal, monthYear];
-  const collectedRes = await sql.query(collectedQuery, collectedParams);
-  const collectedRows = collectedRes.rows || collectedRes;
-  const collected = parseFloat(collectedRows[0]?.total_collected) || 0;
+      // Total target for this chit = (target per ticket * ticket count) + total opening balance
+      const totalTargetForChit = (targetPerTicket * ticketCount) + totalOpeningBalance;
 
-  const pending = totalTargetForChit - collected;
-  grandTarget += totalTargetForChit;
-  grandCollected += collected;
+      // Collected for this chit (sum of collected_amount across all tickets)
+      let collectedQuery = `
+        SELECT SUM(c.collected_amount) as total_collected
+        FROM collections c
+        JOIN agent_tickets at ON c.agent_ticket_id = at.id
+        WHERE at.chit_id = $1 AND c.month_year = $2
+      `;
+      const collectedParams = [chitIdVal, monthYear];
+      const collectedRes = await sql.query(collectedQuery, collectedParams);
+      const collectedRows = collectedRes.rows || collectedRes;
+      const collected = parseFloat(collectedRows[0]?.total_collected) || 0;
 
-  breakdown.push({
-    chitId: chitIdVal,
-    chitName,
-    target: totalTargetForChit,
-    collected,
-    pending,
-  });
-}
+      const pending = totalTargetForChit - collected;
+      grandTarget += totalTargetForChit;
+      grandCollected += collected;
+
+      breakdown.push({
+        chitId: chitIdVal,
+        chitName,
+        target: totalTargetForChit,
+        collected,
+        pending,
+      });
+    }
 
     const totalPending = grandTarget - grandCollected;
 
-    // ---------- 2. Daily Trend (aggregated across all agents) ----------
-    // Build the query with correct timezone conversion
+    // ---------- 2. Daily Trend (unchanged) ----------
     let dailyQuery = `
       WITH daily_totals AS (
         SELECT 
@@ -121,7 +125,6 @@ for (const row of chitTargets) {
     const dailyResult = await sql.query(dailyQuery, dailyParams);
     const dailyRows = dailyResult.rows || dailyResult;
 
-    // Build all dates of the month (for zero‑fill)
     const year = parseInt(monthYear.slice(0, 4));
     const month = parseInt(monthYear.slice(5, 7));
     const daysInMonth = new Date(year, month, 0).getDate();
@@ -130,18 +133,17 @@ for (const row of chitTargets) {
       return `${monthYear.slice(0, 7)}-${day}`;
     });
 
-   const dailyMap = {};
-dailyRows.forEach(row => {
-  // row.date is already a string like '2026-07-02'
-  dailyMap[row.date] = parseFloat(row.daily_collected) || 0;
-});
+    const dailyMap = {};
+    dailyRows.forEach(row => {
+      dailyMap[row.date] = parseFloat(row.daily_collected) || 0;
+    });
 
     const dailyTrend = allDates.map(date => ({
       date,
       collected: dailyMap[date] || 0,
     }));
 
-    // ---------- 3. Agents Breakdown ----------
+    // ---------- 3. Agents Breakdown (with opening balance) ----------
     let agentsQuery = `
       SELECT DISTINCT a.id, a.name, a.agent_code
       FROM agents a
@@ -158,8 +160,10 @@ dailyRows.forEach(row => {
 
     let agentsBreakdown = [];
     for (const agent of agentsRows) {
+      // Sum target + opening balance for this agent
       let targetQuery = `
-        SELECT SUM(mt.target_amount) as total_target
+        SELECT 
+          SUM(mt.target_amount) + COALESCE(SUM(at.opening_balance), 0) as total_target
         FROM agent_tickets at
         JOIN monthly_targets mt ON at.chit_id = mt.chit_id AND mt.month_year = $1
         WHERE at.agent_id = $2
@@ -173,6 +177,7 @@ dailyRows.forEach(row => {
       const targetRows = targetRes.rows || targetRes;
       const target = parseFloat(targetRows[0]?.total_target) || 0;
 
+      // Collected for this agent (sum of collected_amount)
       let collectedQuery = `
         SELECT SUM(c.collected_amount) as total_collected
         FROM collections c
@@ -200,7 +205,7 @@ dailyRows.forEach(row => {
 
     agentsBreakdown.sort((a, b) => b.collected - a.collected);
 
-    // ---------- 4. Monthly Trend ----------
+    // ---------- 4. Monthly Trend (unchanged) ----------
     let monthlyTrendQuery = `
       SELECT 
         TO_CHAR(c.month_year, 'Mon YYYY') as month_label,

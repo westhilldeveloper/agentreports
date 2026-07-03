@@ -22,6 +22,7 @@ export default function AdminSidebar() {
     { href: '/admin/reports', label: 'Reports', icon: FaFileAlt },
      { href: '/admin/regions', label: 'Regions', icon: FaGlobe },       
   { href: '/admin/areas', label: 'Areas', icon: FaLocationArrow }, 
+  { href: '/admin/opening-balance', label: 'Dues', icon: FaLocationArrow }, 
   ];
 
   const limitedLinks = [
