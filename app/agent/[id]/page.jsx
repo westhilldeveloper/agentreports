@@ -204,6 +204,8 @@ export default function AgentDashboard({ params }) {
     collected: t.collected,
     pending: t.pending,
     progress: t.target > 0 ? Math.round((t.collected / t.target) * 100) : 0,
+    customer_name: t.customer_name || '-',   // ✅ add
+    customer_phone: t.customer_phone || '-',
   }))
 );
 
@@ -350,6 +352,8 @@ export default function AgentDashboard({ params }) {
                   <th className="px-4 py-2 text-left">Ticket</th>
                    <th className="px-4 py-2 text-left">Opening Balance (₹)</th> 
                   <th className="px-4 py-2 text-left">Auction Date</th>
+                  <th className="px-4 py-2 text-left">Customer Name</th>
+                  <th className="px-4 py-2 text-left">Customer Phone</th>
                   <th className="px-4 py-2 text-right">Target (₹)</th>
                   <th className="px-4 py-2 text-right">Collected (₹)</th>
                   <th className="px-4 py-2 text-right">Pending (₹)</th>
@@ -380,6 +384,8 @@ export default function AgentDashboard({ params }) {
                           minute: '2-digit'
                         }) : '-'}
                       </td>
+                      <td className="px-4 py-2.5 text-gray-600">{t.customer_name}</td>
+                      <td className="px-4 py-2.5 text-gray-600">{t.customer_phone}</td>
                       <td className="px-4 py-2.5 text-right text-gray-600">₹{t.target.toLocaleString()}</td>
                       <td className="px-4 py-2.5 text-right text-green-600 font-medium">₹{t.collected.toLocaleString()}</td>
                       <td className="px-4 py-2.5 text-right text-red-600 font-medium">₹{t.pending.toLocaleString()}</td>

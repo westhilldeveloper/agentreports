@@ -21,11 +21,11 @@ export async function GET(req, { params }) {
 
     // 1. Get tickets (optionally filtered by chit)
     let ticketsQuery = sql`
-      SELECT at.id as agent_ticket_id, at.ticket_number, c.id as chit_id, c.name as chit_name, c.auction_date,at.opening_balance
-      FROM agent_tickets at
-      JOIN chits c ON at.chit_id = c.id
-      WHERE at.agent_id = ${agentId}
-    `;
+  SELECT at.id as agent_ticket_id, at.ticket_number, c.id as chit_id, c.name as chit_name, c.auction_date, at.opening_balance, at.customer_name, at.customer_phone
+  FROM agent_tickets at
+  JOIN chits c ON at.chit_id = c.id
+  WHERE at.agent_id = ${agentId}
+`;
     if (chitId) {
       ticketsQuery = sql`
         SELECT at.id as agent_ticket_id, at.ticket_number, c.id as chit_id, c.name as chit_name, c.auction_date,at.opening_balance
@@ -118,6 +118,8 @@ export async function GET(req, { params }) {
         collected: currentCollected,
         pending: pending,
         openingBalance,
+        customer_name: ticket.customer_name,   // ✅ add
+        customer_phone: ticket.customer_phone,
       });
     }
 
