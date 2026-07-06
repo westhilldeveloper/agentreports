@@ -206,16 +206,15 @@ export async function GET(req, { params }) {
     }));
 
     // 5. Monthly statement (history) – also fix the date
-    // 5. Monthly statement – include customer fields
-const historyQuery = sql`
+   const historyQuery = sql`
   WITH ticket_opening AS (
     SELECT 
       at.id as agent_ticket_id,
       at.ticket_number,
       c.name as chit_name,
-      c.customer_name,
-      c.customer_phone,
       at.opening_balance,
+      at.customer_name,        -- ✅ add customer name
+      at.customer_phone,       -- ✅ add customer phone
       COALESCE(
         (SELECT SUM(mt.target_amount) 
          FROM monthly_targets mt 
@@ -230,7 +229,6 @@ const historyQuery = sql`
       ) as cum_collected_before
     FROM agent_tickets at
     JOIN chits c ON at.chit_id = c.id
-    JOIN agents a ON at.agent_id = a.id   
     WHERE at.agent_id = ${agentId}
       ${chitId ? sql`AND at.chit_id = ${chitId}` : sql``}
   ),

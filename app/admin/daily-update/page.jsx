@@ -79,18 +79,24 @@ export default function DailyUpdate() {
 
   // Fetch collections
   const fetchCollections = async () => {
-    const params = new URLSearchParams();
-    params.append('list', 'true');
-    if (filterAgentId) params.append('agentId', filterAgentId);
-    if (filterChitId) params.append('chitId', filterChitId);
-    if (filterMonth) params.append('month', filterMonth);
-    const res = await fetch(`/api/admin/daily-update?${params.toString()}`);
-    const data = await res.json();
-    if (data.success) setAllCollections(data.data);
-  };
+  const params = new URLSearchParams();
+  params.append('list', 'true');
+  if (filterAgentId) params.append('agentId', filterAgentId);
+  if (filterChitId) params.append('chitId', filterChitId);
+  if (filterMonth) params.append('month', filterMonth);
+  const url = `/api/admin/daily-update?${params.toString()}`;
+  console.log('Fetching collections URL:', url);
+  const res = await fetch(url);
+  const data = await res.json();
+  console.log('Collections API response:', data);
+  if (data.success) {
+    console.log('Data rows:', data.data);
+    setAllCollections(Array.isArray(data.data) ? data.data : []);
+  }
+};
 
   useEffect(() => {
-    if (filterMonth) fetchCollections();
+     fetchCollections();
   }, [filterAgentId, filterChitId, filterMonth]);
 
   // Submit new collection

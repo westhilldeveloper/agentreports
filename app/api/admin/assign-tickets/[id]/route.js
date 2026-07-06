@@ -5,7 +5,7 @@ import { NextResponse } from 'next/server';
 export async function PUT(req, { params }) {
   try {
     const { id } = await params;
-    const { agentId } = await req.json();
+    const { agentId, customer_name, customer_phone } = await req.json();
 
     if (!agentId) {
       return NextResponse.json(
@@ -45,7 +45,11 @@ export async function PUT(req, { params }) {
 
     // Update the agent
     await sql`
-      UPDATE agent_tickets SET agent_id = ${agentId} WHERE id = ${id}
+      UPDATE agent_tickets 
+      SET agent_id = ${agentId},
+          customer_name = ${customer_name || null},
+          customer_phone = ${customer_phone || null}
+      WHERE id = ${id}
     `;
 
     return NextResponse.json({

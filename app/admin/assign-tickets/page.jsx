@@ -15,6 +15,10 @@ export default function AssignTickets() {
   const [fetchingAssignments, setFetchingAssignments] = useState(false);
   const [message, setMessage] = useState('');
   const [error, setError] = useState('');
+  const [customerName, setCustomerName] = useState('');
+  const [customerPhone, setCustomerPhone] = useState('');
+  const [editCustomerName, setEditCustomerName] = useState('');
+  const [editCustomerPhone, setEditCustomerPhone] = useState('');
 
   // Edit modal state
   const [editModalOpen, setEditModalOpen] = useState(false);
@@ -93,6 +97,8 @@ export default function AssignTickets() {
           agentId: selectedAgentId,
           chitId: selectedChitId,
           ticketNumber: parseInt(ticketNumber),
+          customer_name: customerName,
+          customer_phone: customerPhone,
         }),
       });
       const data = await res.json();
@@ -117,6 +123,8 @@ export default function AssignTickets() {
     setEditAgentId(assignment.agent_id);
     setEditError('');
     setEditModalOpen(true);
+    setEditCustomerName(assignment.customer_name || '');
+    setEditCustomerPhone(assignment.customer_phone || '');
   };
 
   const closeEditModal = () => {
@@ -134,7 +142,8 @@ export default function AssignTickets() {
       const res = await fetch(`/api/admin/assign-tickets/${editingAssignment.id}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ agentId: editAgentId }),
+        body: JSON.stringify({ agentId: editAgentId,  customer_name: editCustomerName,
+    customer_phone: editCustomerPhone, }),
       });
       const data = await res.json();
       if (data.success) {
@@ -177,7 +186,9 @@ export default function AssignTickets() {
     return (
       a.agent_name?.toLowerCase().includes(search) ||
       a.agent_code?.toLowerCase().includes(search) ||
-      a.chit_name?.toLowerCase().includes(search)
+      a.chit_name?.toLowerCase().includes(search) ||
+      a.customer_name?.toLowerCase().includes(search) ||
+      a.customer_phone?.toLowerCase().includes(search)
     );
   });
 
@@ -253,6 +264,30 @@ export default function AssignTickets() {
                 <p className="text-xs text-amber-600 mt-1.5">No unassigned tickets left for this chit.</p>
               )}
             </div>
+            <div>
+  <label className="block text-xs font-medium text-gray-500 uppercase tracking-wider mb-1.5">
+    Customer Name
+  </label>
+  <input
+    type="text"
+    placeholder="Customer name"
+    className="w-full border border-gray-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400 focus:border-transparent transition bg-gray-50"
+    value={customerName}
+    onChange={(e) => setCustomerName(e.target.value.toUpperCase())}
+  />
+</div>
+<div>
+  <label className="block text-xs font-medium text-gray-500 uppercase tracking-wider mb-1.5">
+    Customer Phone
+  </label>
+  <input
+    type="text"
+    placeholder="Customer phone"
+    className="w-full border border-gray-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400 focus:border-transparent transition bg-gray-50"
+    value={customerPhone}
+    onChange={(e) => setCustomerPhone(e.target.value)}
+  />
+</div>
           </div>
 
           {error && (
@@ -280,6 +315,8 @@ export default function AssignTickets() {
                 setSelectedAgentId('');
                 setSelectedChitId('');
                 setTicketNumber('');
+                setCustomerName('');
+                setCustomerPhone('');
                 setUnassignedTickets([]);
                 setError('');
                 setMessage('');
@@ -324,6 +361,8 @@ export default function AssignTickets() {
                   <th className="px-5 py-3.5 text-left font-medium">Agent Code</th>
                   <th className="px-5 py-3.5 text-left font-medium">Chit</th>
                   <th className="px-5 py-3.5 text-left font-medium">Ticket</th>
+                  <th className="px-5 py-3.5 text-left font-medium">Customer Name</th>
+                  <th className="px-5 py-3.5 text-left font-medium">Customer Phone</th>
                   <th className="px-5 py-3.5 text-left font-medium">Assigned Date</th>
                   <th className="px-5 py-3.5 text-center font-medium">Actions</th>
                 </tr>
@@ -348,6 +387,8 @@ export default function AssignTickets() {
                       <td className="px-5 py-3.5 text-gray-500">{a.agent_code}</td>
                       <td className="px-5 py-3.5 text-gray-700">{a.chit_name}</td>
                       <td className="px-5 py-3.5 text-gray-700">Token {a.ticket_number}</td>
+                      <td className="px-5 py-3.5 text-gray-700">{a.customer_name || '-'}</td>
+                      <td className="px-5 py-3.5 text-gray-700">{a.customer_phone || '-'}</td>
                       <td className="px-5 py-3.5 text-gray-500 text-xs">{a.assigned_date}</td>
                       <td className="px-5 py-3.5 text-center">
                         <div className="flex items-center justify-center space-x-1.5">
@@ -377,62 +418,90 @@ export default function AssignTickets() {
       </div>
 
       {/* Edit Modal */}
-      {editModalOpen && (
-        <div className="fixed inset-0 bg-black/30 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-2xl shadow-xl max-w-md w-full p-6 relative animate-fadeInUp">
-            <button
-              onClick={closeEditModal}
-              className="absolute top-4 right-4 text-gray-400 hover:text-gray-600 transition"
-            >
-              <FaTimes className="w-5 h-5" />
-            </button>
-            <h2 className="text-xl font-light text-gray-900 mb-1">Reassign Ticket</h2>
-            <p className="text-sm text-gray-500 mb-5">
-              Ticket <span className="font-medium text-gray-700">#{editingAssignment?.ticket_number}</span> from{' '}
-              <span className="font-medium text-gray-700">{editingAssignment?.chit_name}</span>
-              <br />
-              Currently assigned to <span className="font-medium text-gray-700">{editingAssignment?.agent_name}</span>
-            </p>
-            <form onSubmit={handleEditSubmit} className="space-y-5">
-              <div>
-                <label className="block text-xs font-medium text-gray-500 uppercase tracking-wider mb-1.5">
-                  New Agent
-                </label>
-                <select
-                  className="w-full border border-gray-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400 focus:border-transparent transition bg-gray-50"
-                  value={editAgentId}
-                  onChange={(e) => setEditAgentId(e.target.value)}
-                  required
-                >
-                  <option value="">Select Agent</option>
-                  {agents.map((a) => (
-                    <option key={a.id} value={a.id}>
-                      {a.name} ({a.agent_code})
-                    </option>
-                  ))}
-                </select>
-              </div>
-              {editError && <p className="text-red-600 text-sm">{editError}</p>}
-              <div className="flex space-x-3 pt-2">
-                <button
-                  type="button"
-                  onClick={closeEditModal}
-                  className="flex-1 bg-gray-100 hover:bg-gray-200 text-gray-700 text-sm font-medium px-4 py-2.5 rounded-xl transition"
-                >
-                  Cancel
-                </button>
-                <button
-                  type="submit"
-                  className="flex-1 bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium px-4 py-2.5 rounded-xl transition shadow-sm disabled:opacity-60"
-                  disabled={editLoading}
-                >
-                  {editLoading ? 'Reassigning...' : 'Reassign'}
-                </button>
-              </div>
-            </form>
-          </div>
+      {/* Edit Modal */}
+{editModalOpen && (
+  <div className="fixed inset-0 bg-black/30 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+    <div className="bg-white rounded-2xl shadow-xl max-w-md w-full p-6 relative animate-fadeInUp">
+      <button
+        onClick={closeEditModal}
+        className="absolute top-4 right-4 text-gray-400 hover:text-gray-600 transition"
+      >
+        <FaTimes className="w-5 h-5" />
+      </button>
+      <h2 className="text-xl font-light text-gray-900 mb-1">Reassign Ticket</h2>
+      <p className="text-sm text-gray-500 mb-5">
+        Ticket <span className="font-medium text-gray-700">#{editingAssignment?.ticket_number}</span> from{' '}
+        <span className="font-medium text-gray-700">{editingAssignment?.chit_name}</span>
+        <br />
+        Currently assigned to <span className="font-medium text-gray-700">{editingAssignment?.agent_name}</span>
+      </p>
+      <form onSubmit={handleEditSubmit} className="space-y-5">
+        <div>
+          <label className="block text-xs font-medium text-gray-500 uppercase tracking-wider mb-1.5">
+            New Agent
+          </label>
+          <select
+            className="w-full border border-gray-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400 focus:border-transparent transition bg-gray-50"
+            value={editAgentId}
+            onChange={(e) => setEditAgentId(e.target.value)}
+            required
+          >
+            <option value="">Select Agent</option>
+            {agents.map((a) => (
+              <option key={a.id} value={a.id}>
+                {a.name} ({a.agent_code})
+              </option>
+            ))}
+          </select>
         </div>
-      )}
+
+        {/* ✅ Customer Name */}
+        <div>
+          <label className="block text-xs font-medium text-gray-500 uppercase tracking-wider mb-1.5">
+            Customer Name
+          </label>
+          <input
+            type="text"
+            className="w-full border border-gray-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400 focus:border-transparent transition bg-gray-50"
+            value={editCustomerName}
+            onChange={(e) => setEditCustomerName(e.target.value.toUpperCase())}
+          />
+        </div>
+
+        {/* ✅ Customer Phone */}
+        <div>
+          <label className="block text-xs font-medium text-gray-500 uppercase tracking-wider mb-1.5">
+            Customer Phone
+          </label>
+          <input
+            type="text"
+            className="w-full border border-gray-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400 focus:border-transparent transition bg-gray-50"
+            value={editCustomerPhone}
+            onChange={(e) => setEditCustomerPhone(e.target.value)}
+          />
+        </div>
+
+        {editError && <p className="text-red-600 text-sm">{editError}</p>}
+        <div className="flex space-x-3 pt-2">
+          <button
+            type="button"
+            onClick={closeEditModal}
+            className="flex-1 bg-gray-100 hover:bg-gray-200 text-gray-700 text-sm font-medium px-4 py-2.5 rounded-xl transition"
+          >
+            Cancel
+          </button>
+          <button
+            type="submit"
+            className="flex-1 bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium px-4 py-2.5 rounded-xl transition shadow-sm disabled:opacity-60"
+            disabled={editLoading}
+          >
+            {editLoading ? 'Reassigning...' : 'Reassign'}
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+)}
 
       {/* Tailwind animation (add to global CSS if not present) */}
       <style jsx global>{`

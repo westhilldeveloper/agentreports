@@ -3,9 +3,8 @@ import { NextResponse } from 'next/server';
 
 export async function POST(req) {
   try {
-    const { agentId, chitId, ticketNumber } = await req.json();
+    const { agentId, chitId, ticketNumber, customer_name, customer_phone } = await req.json();
 
-    // Validate inputs
     if (!agentId || !chitId || !ticketNumber) {
       return NextResponse.json(
         { success: false, message: 'Agent, Chit, and Ticket are required' },
@@ -18,7 +17,6 @@ export async function POST(req) {
       SELECT id FROM agent_tickets 
       WHERE chit_id = ${chitId} AND ticket_number = ${ticketNumber}
     `;
-
     if (existing.length > 0) {
       return NextResponse.json(
         { success: false, message: 'This ticket is already assigned to another agent' },
@@ -26,10 +24,10 @@ export async function POST(req) {
       );
     }
 
-    // Assign ticket to agent
+    // Assign ticket to agent with customer details
     await sql`
-      INSERT INTO agent_tickets (agent_id, chit_id, ticket_number) 
-      VALUES (${agentId}, ${chitId}, ${ticketNumber})
+      INSERT INTO agent_tickets (agent_id, chit_id, ticket_number, customer_name, customer_phone) 
+      VALUES (${agentId}, ${chitId}, ${ticketNumber}, ${customer_name || null}, ${customer_phone || null})
     `;
 
     return NextResponse.json({
@@ -56,6 +54,9 @@ export async function GET(req) {
       SELECT 
         at.id, 
         at.ticket_number, 
+        at.agent_id,
+        at.customer_name,
+        at.customer_phone,
         TO_CHAR(at.assigned_at, 'DD Mon YYYY') as assigned_date,
         c.name as chit_name, 
         a.name as agent_name, 
