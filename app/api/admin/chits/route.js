@@ -13,7 +13,7 @@ export async function GET() {
 
 export async function POST(req) {
   try {
-    const { name, total_tickets, auction_date } = await req.json();
+    const { name, total_tickets, auction_date, customer_name, customer_phone } = await req.json();
     if (!name || !total_tickets || !auction_date) {
       return NextResponse.json(
         { success: false, message: 'Name, total tickets, and auction date are required' },
@@ -22,8 +22,8 @@ export async function POST(req) {
     }
 
     const result = await sql`
-      INSERT INTO chits (name, total_tickets, auction_date) 
-      VALUES (${name}, ${total_tickets}, ${auction_date}) 
+      INSERT INTO chits (name, total_tickets, auction_date, customer_name, customer_phone) 
+      VALUES (${name}, ${total_tickets}, ${auction_date}, ${customer_name || null}, ${customer_phone || null}) 
       RETURNING *
     `;
     return NextResponse.json({ success: true, data: result[0] });

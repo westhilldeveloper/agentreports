@@ -244,6 +244,8 @@ export default function AgentDashboard({ params }) {
         </div>
       </header>
 
+      
+
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
         {/* Page Title & Month Picker */}
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-6">
@@ -416,6 +418,8 @@ export default function AgentDashboard({ params }) {
                   <th className="px-4 py-2 text-left">Date</th>
                   <th className="px-4 py-2 text-left">Chit</th>
                   <th className="px-4 py-2 text-left">Ticket</th>
+                  <th className="px-4 py-2 text-left">Cust. Name</th>
+                  <th className="px-4 py-2 text-left">Cust. Number</th>
                   <th className="px-4 py-2 text-right">Collected (₹)</th>
                   <th className="px-4 py-2 text-right">Balance (₹)</th>
                 </tr>
@@ -435,11 +439,13 @@ export default function AgentDashboard({ params }) {
                       </td>
                       <td className="px-4 py-2.5 text-gray-700">{h.chit_name}</td>
                       <td className="px-4 py-2.5 text-gray-700">Token {h.ticket_number}</td>
+                      <td className="px-4 py-2.5 text-gray-700">{h.customer_name || '-'}</td>
+                      <td className="px-4 py-2.5 text-gray-700">{h.customer_phone || '-'}</td>
                       <td className="px-4 py-2.5 text-right text-green-600 font-medium">
                         ₹{parseFloat(h.daily_collected).toLocaleString()}
                       </td>
                       <td className="px-4 py-2.5 text-right text-red-600 font-medium">
-                        ₹{parseFloat(h.balance).toLocaleString()}
+                        ₹{Math.max(0, parseFloat(h.balance)).toLocaleString()}
                       </td>
                     </tr>
                   ))

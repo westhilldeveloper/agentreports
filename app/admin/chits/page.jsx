@@ -9,6 +9,10 @@ export default function ChitsPage() {
   const [auctionDate, setAuctionDate] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+  const [customerName, setCustomerName] = useState('');
+  const [customerPhone, setCustomerPhone] = useState('');
+  const [editCustomerName, setEditCustomerName] = useState('');
+  const [editCustomerPhone, setEditCustomerPhone] = useState('');
 
   // Edit modal
   const [editingChit, setEditingChit] = useState(null);
@@ -39,6 +43,8 @@ export default function ChitsPage() {
           name,
           total_tickets: parseInt(totalTickets),
           auction_date: auctionDate,
+          customer_name: customerName,
+          customer_phone: customerPhone,
         }),
       });
       const data = await res.json();
@@ -59,6 +65,8 @@ export default function ChitsPage() {
   setEditingChit(chit);
   setEditName(chit.name);
   setEditTotalTickets(chit.total_tickets);
+  setEditCustomerName(chit.customer_name || '');
+  setEditCustomerPhone(chit.customer_phone || '');
   // Build local ISO string (YYYY-MM-DDTHH:mm) without UTC conversion
   const date = new Date(chit.auction_date);
   const localISO = 
@@ -92,6 +100,8 @@ export default function ChitsPage() {
           name: editName,
           total_tickets: parseInt(editTotalTickets),
           auction_date: editAuctionDate,
+          customer_name: editCustomerName,
+          customer_phone: editCustomerPhone,
         }),
       });
       const data = await res.json();
@@ -166,6 +176,26 @@ export default function ChitsPage() {
                 required
               />
             </div>
+            <div className="w-48">
+  <label className="block text-xs font-medium text-gray-500 uppercase tracking-wider mb-1">Customer Name</label>
+  <input
+    type="text"
+    placeholder="Customer name"
+    className="w-full border border-gray-200 rounded-lg px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+    value={customerName}
+    onChange={(e) => setCustomerName(e.target.value)}
+  />
+</div>
+<div className="w-48">
+  <label className="block text-xs font-medium text-gray-500 uppercase tracking-wider mb-1">Customer Phone</label>
+  <input
+    type="text"
+    placeholder="Customer phone"
+    className="w-full border border-gray-200 rounded-lg px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+    value={customerPhone}
+    onChange={(e) => setCustomerPhone(e.target.value)}
+  />
+</div>
             <button
               type="submit"
               className="bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium px-4 py-1.5 rounded-lg transition flex items-center space-x-2 h-9"
@@ -187,6 +217,8 @@ export default function ChitsPage() {
         <th className="px-4 py-2 text-left">Name</th>
         <th className="px-4 py-2 text-left">Tickets</th>
         <th className="px-4 py-2 text-left">Auction Date</th>
+        <th className="px-4 py-2 text-left">Customer Name</th>
+        <th className="px-4 py-2 text-left">Customer Phone</th>
         <th className="px-4 py-2 text-left">Created</th>
         <th className="px-4 py-2 text-center">Actions</th>
       </tr>
@@ -208,6 +240,8 @@ export default function ChitsPage() {
                 <span>{new Date(chit.auction_date).toLocaleString('en-GB')}</span>
               </div>
             </td>
+            <td className="px-4 py-2.5 text-gray-700">{chit.customer_name || '-'}</td>
+            <td className="px-4 py-2.5 text-gray-700">{chit.customer_phone || '-'}</td>
             <td className="px-4 py-2.5 text-gray-500">
               <div className="flex items-center space-x-1">
                 <FaCalendarAlt className="w-3 h-3 text-gray-400" />
@@ -279,6 +313,24 @@ export default function ChitsPage() {
                   required
                 />
               </div>
+              <div>
+  <label className="block text-xs font-medium text-gray-500 uppercase tracking-wider mb-1">Customer Name</label>
+  <input
+    type="text"
+    className="w-full border border-gray-200 rounded-lg px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+    value={editCustomerName}
+    onChange={(e) => setEditCustomerName(e.target.value)}
+  />
+</div>
+<div>
+  <label className="block text-xs font-medium text-gray-500 uppercase tracking-wider mb-1">Customer Phone</label>
+  <input
+    type="text"
+    className="w-full border border-gray-200 rounded-lg px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+    value={editCustomerPhone}
+    onChange={(e) => setEditCustomerPhone(e.target.value)}
+  />
+</div>
               {editError && <p className="text-red-600 text-xs">{editError}</p>}
               <div className="flex space-x-3 pt-2">
                 <button type="button" onClick={closeEditModal} className="flex-1 bg-gray-100 hover:bg-gray-200 text-gray-700 text-sm font-medium px-4 py-2 rounded-lg transition">

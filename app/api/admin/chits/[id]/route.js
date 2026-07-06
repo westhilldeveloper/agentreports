@@ -5,7 +5,7 @@ import { NextResponse } from 'next/server';
 export async function PUT(req, { params }) {
   try {
     const { id } = await params;
-    const { name, total_tickets, auction_date } = await req.json();
+    const { name, total_tickets, auction_date, customer_name, customer_phone } = await req.json();
 
     if (!name || !total_tickets || !auction_date) {
       return NextResponse.json(
@@ -16,7 +16,11 @@ export async function PUT(req, { params }) {
 
     const result = await sql`
       UPDATE chits 
-      SET name = ${name}, total_tickets = ${total_tickets}, auction_date = ${auction_date}
+      SET name = ${name}, 
+          total_tickets = ${total_tickets}, 
+          auction_date = ${auction_date},
+          customer_name = ${customer_name || null},
+          customer_phone = ${customer_phone || null}
       WHERE id = ${id}
       RETURNING *
     `;

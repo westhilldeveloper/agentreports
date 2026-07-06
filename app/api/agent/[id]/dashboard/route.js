@@ -206,60 +206,67 @@ export async function GET(req, { params }) {
     }));
 
     // 5. Monthly statement (history) – also fix the date
-    const historyQuery = sql`
-      -- Instead of the current historyQuery, use:
-WITH ticket_opening AS (
+    // 5. Monthly statement – include customer fields
+const historyQuery = sql`
+  WITH ticket_opening AS (
+    SELECT 
+      at.id as agent_ticket_id,
+      at.ticket_number,
+      c.name as chit_name,
+      c.customer_name,
+      c.customer_phone,
+      at.opening_balance,
+      COALESCE(
+        (SELECT SUM(mt.target_amount) 
+         FROM monthly_targets mt 
+         WHERE mt.chit_id = at.chit_id 
+           AND mt.month_year < ${monthYear}), 0
+      ) as cum_target_before,
+      COALESCE(
+        (SELECT SUM(col.collected_amount) 
+         FROM collections col 
+         WHERE col.agent_ticket_id = at.id 
+           AND col.month_year < ${monthYear}), 0
+      ) as cum_collected_before
+    FROM agent_tickets at
+    JOIN chits c ON at.chit_id = c.id
+    JOIN agents a ON at.agent_id = a.id   
+    WHERE at.agent_id = ${agentId}
+      ${chitId ? sql`AND at.chit_id = ${chitId}` : sql``}
+  ),
+  history_with_diff AS (
+    SELECT 
+      TO_CHAR(DATE(ch.updated_at AT TIME ZONE 'UTC' AT TIME ZONE 'Asia/Kolkata'), 'YYYY-MM-DD') as date,
+      to_ticket.chit_name,
+      to_ticket.ticket_number,
+      to_ticket.customer_name,
+      to_ticket.customer_phone,
+      ch.collected_amount,
+      ch.pending_amount,
+      LAG(ch.collected_amount) OVER (
+        PARTITION BY ch.agent_ticket_id 
+        ORDER BY ch.updated_at
+      ) as prev_collected,
+      to_ticket.opening_balance,
+      to_ticket.cum_target_before,
+      to_ticket.cum_collected_before
+    FROM collection_history ch
+    JOIN ticket_opening to_ticket ON ch.agent_ticket_id = to_ticket.agent_ticket_id
+    WHERE ch.month_year = ${monthYear}
+  )
   SELECT 
-    at.id as agent_ticket_id,
-    at.ticket_number,
-    c.name as chit_name,
-    at.opening_balance,
-    COALESCE(
-      (SELECT SUM(mt.target_amount) 
-       FROM monthly_targets mt 
-       WHERE mt.chit_id = at.chit_id 
-         AND mt.month_year < ${monthYear}), 0
-    ) as cum_target_before,
-    COALESCE(
-      (SELECT SUM(col.collected_amount) 
-       FROM collections col 
-       WHERE col.agent_ticket_id = at.id 
-         AND col.month_year < ${monthYear}), 0
-    ) as cum_collected_before
-  FROM agent_tickets at
-  JOIN chits c ON at.chit_id = c.id
-  WHERE at.agent_id = ${agentId}
-    ${chitId ? sql`AND at.chit_id = ${chitId}` : sql``}
-),
-history_with_diff AS (
-  SELECT 
-    TO_CHAR(DATE(ch.updated_at AT TIME ZONE 'UTC' AT TIME ZONE 'Asia/Kolkata'), 'YYYY-MM-DD') as date,
-    to_ticket.chit_name,
-    to_ticket.ticket_number,
-    ch.collected_amount,
-    ch.pending_amount,
-    LAG(ch.collected_amount) OVER (
-      PARTITION BY ch.agent_ticket_id 
-      ORDER BY ch.updated_at
-    ) as prev_collected,
-    to_ticket.opening_balance,
-    to_ticket.cum_target_before,
-    to_ticket.cum_collected_before
-  FROM collection_history ch
-  JOIN ticket_opening to_ticket ON ch.agent_ticket_id = to_ticket.agent_ticket_id
-  WHERE ch.month_year = ${monthYear}
-)
-SELECT 
-  date,
-  chit_name,
-  ticket_number,
-  (collected_amount - COALESCE(prev_collected, 0)) as daily_collected,
-  pending_amount as balance,
-  -- opening balance for the month = opening_balance + cum_target_before - cum_collected_before
-  (opening_balance + cum_target_before - cum_collected_before) as opening_balance
-FROM history_with_diff
-ORDER BY date ASC, ticket_number ASC`;
-    const history = await historyQuery;
+    date,
+    chit_name,
+    ticket_number,
+    customer_name,
+    customer_phone,
+    (collected_amount - COALESCE(prev_collected, 0)) as daily_collected,
+    pending_amount as balance,
+    (opening_balance + cum_target_before - cum_collected_before) as opening_balance
+  FROM history_with_diff
+  ORDER BY date ASC, ticket_number ASC
+`;
+const history = await historyQuery;
 
     return NextResponse.json({
       success: true,

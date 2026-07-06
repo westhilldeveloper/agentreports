@@ -33,7 +33,7 @@ export default function AdminSidebar() {
   const links = isFullAdmin ? allLinks : limitedLinks;
 
   return (
-    <aside className="w-64 bg-gray-800 text-white h-screen p-4 fixed">
+    <aside className="w-64 bg-gray-800 text-white h-screen p-4 fixed z-20">
       {/* Logo + Title */}
       <div className="flex items-center space-x-3 mb-8">
         <Image 
