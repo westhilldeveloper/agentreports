@@ -200,15 +200,15 @@ export default function AssignTickets() {
   });
 
   return (
-    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 font-sans text-gray-800">
+     <div suppressHydrationWarning className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 font-sans text-gray-800">
       {/* Header */}
       <div className="mb-6">
         <h1 className="text-xl font-light tracking-tight text-gray-900">Assign Tickets</h1>
         <p className="text-xs text-gray-500 mt-0.5">Allocate tickets to agents for collection</p>
       </div>
 
-      {/* Assignment Form Card */}
-      <div className="bg-white rounded-lg shadow-sm border border-gray-100 p-4 sm:p-6 mb-6 transition-shadow hover:shadow-md">
+      {/* Form Card */}
+      <div className="bg-white rounded-lg shadow-sm border border-gray-100 p-4 sm:p-6 mb-8 transition-shadow hover:shadow-md">
         <form onSubmit={handleSubmit} className="space-y-4">
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
             {/* Agent */}
@@ -218,10 +218,10 @@ export default function AssignTickets() {
               </label>
               <div className="relative">
                 <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                  <FaUser className="w-3.5 h-3.5 text-gray-400" />
+                  <FaUser className="w-4 h-4 text-gray-400" />
                 </div>
                 <select
-                  className="w-full border border-gray-200 rounded-lg pl-9 pr-3 py-1.5 text-xs focus:outline-none focus:ring-2 focus:ring-blue-400 focus:border-transparent transition bg-gray-50 appearance-none"
+                  className="w-full border border-gray-200 rounded-lg pl-10 pr-3 py-2 text-xs focus:outline-none focus:ring-2 focus:ring-blue-400 focus:border-transparent transition bg-gray-50 appearance-none"
                   value={selectedAgentId}
                   onChange={(e) => setSelectedAgentId(e.target.value)}
                   required
@@ -243,10 +243,10 @@ export default function AssignTickets() {
               </label>
               <div className="relative">
                 <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                  <FaTag className="w-3.5 h-3.5 text-gray-400" />
+                  <FaTag className="w-4 h-4 text-gray-400" />
                 </div>
                 <select
-                  className="w-full border border-gray-200 rounded-lg pl-9 pr-3 py-1.5 text-xs focus:outline-none focus:ring-2 focus:ring-blue-400 focus:border-transparent transition bg-gray-50 appearance-none"
+                  className="w-full border border-gray-200 rounded-lg pl-10 pr-3 py-2 text-xs focus:outline-none focus:ring-2 focus:ring-blue-400 focus:border-transparent transition bg-gray-50 appearance-none"
                   value={selectedChitId}
                   onChange={handleChitChange}
                   required
@@ -261,17 +261,17 @@ export default function AssignTickets() {
               </div>
             </div>
 
-            {/* Ticket Number */}
+            {/* Ticket */}
             <div>
               <label className="block text-xs font-medium text-gray-500 uppercase tracking-wider mb-1">
                 Ticket
               </label>
               <div className="relative">
                 <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                  <FaIdBadge className="w-3.5 h-3.5 text-gray-400" />
+                  <FaIdBadge className="w-4 h-4 text-gray-400" />
                 </div>
                 <select
-                  className="w-full border border-gray-200 rounded-lg pl-9 pr-3 py-1.5 text-xs focus:outline-none focus:ring-2 focus:ring-blue-400 focus:border-transparent transition bg-gray-50 appearance-none"
+                  className="w-full border border-gray-200 rounded-lg pl-10 pr-3 py-2 text-xs focus:outline-none focus:ring-2 focus:ring-blue-400 focus:border-transparent transition bg-gray-50 appearance-none"
                   value={ticketNumber}
                   onChange={(e) => setTicketNumber(e.target.value)}
                   required
@@ -285,7 +285,7 @@ export default function AssignTickets() {
                   ))}
                 </select>
                 {selectedChitId && unassignedTickets.length === 0 && (
-                  <p className="text-xs text-amber-600 mt-1">No unassigned tickets left.</p>
+                  <p className="text-xs text-amber-600 mt-1">No unassigned tickets left for this chit.</p>
                 )}
               </div>
             </div>
@@ -298,7 +298,7 @@ export default function AssignTickets() {
               <input
                 type="text"
                 placeholder="Enter customer name"
-                className="w-full border border-gray-200 rounded-lg px-3 py-1.5 text-xs focus:outline-none focus:ring-2 focus:ring-blue-400 focus:border-transparent transition bg-gray-50"
+                className="w-full border border-gray-200 rounded-lg px-3 py-2 text-xs focus:outline-none focus:ring-2 focus:ring-blue-400 focus:border-transparent transition bg-gray-50"
                 value={customerName}
                 onChange={(e) => setCustomerName(e.target.value)}
                 suppressHydrationWarning
@@ -306,20 +306,20 @@ export default function AssignTickets() {
             </div>
           </div>
 
-          {/* Customer Phone (separate row) */}
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            {/* Customer Phone */}
             <div>
               <label className="block text-xs font-medium text-gray-500 uppercase tracking-wider mb-1">
                 Customer Phone
               </label>
               <div className="relative">
                 <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                  <FaPhone className="w-3.5 h-3.5 text-gray-400" />
+                  <FaPhone className="w-4 h-4 text-gray-400" />
                 </div>
                 <input
                   type="text"
                   placeholder="Enter customer phone"
-                  className="w-full border border-gray-200 rounded-lg pl-9 pr-3 py-1.5 text-xs focus:outline-none focus:ring-2 focus:ring-blue-400 focus:border-transparent transition bg-gray-50"
+                  className="w-full border border-gray-200 rounded-lg pl-10 pr-3 py-2 text-xs focus:outline-none focus:ring-2 focus:ring-blue-400 focus:border-transparent transition bg-gray-50"
                   value={customerPhone}
                   onChange={(e) => setCustomerPhone(e.target.value)}
                   suppressHydrationWarning
@@ -342,7 +342,7 @@ export default function AssignTickets() {
           <div className="flex items-center space-x-3 pt-1">
             <button
               type="submit"
-              className="bg-blue-600 hover:bg-blue-700 text-white font-medium px-6 py-1.5 rounded-lg transition shadow-sm hover:shadow focus:outline-none focus:ring-2 focus:ring-blue-400 focus:ring-offset-2 disabled:opacity-60 disabled:cursor-not-allowed text-xs"
+              className="bg-blue-600 hover:bg-blue-700 text-white font-medium px-6 py-2 rounded-lg transition shadow-sm hover:shadow focus:outline-none focus:ring-2 focus:ring-blue-400 focus:ring-offset-2 disabled:opacity-60 disabled:cursor-not-allowed text-xs"
               disabled={loading || !ticketNumber}
             >
               {loading ? 'Assigning...' : 'Assign Ticket'}
@@ -374,19 +374,19 @@ export default function AssignTickets() {
           <div className="flex items-center gap-2">
             <input
               type="text"
-              placeholder="Filter..."
+              placeholder="Filter by agent, chit, or customer..."
               value={filterText}
               onChange={(e) => setFilterText(e.target.value)}
-              className="border border-gray-200 rounded-lg px-3 py-1 text-xs focus:outline-none focus:ring-2 focus:ring-blue-400 focus:border-transparent transition bg-gray-50 w-40 sm:w-48"
+              className="border border-gray-200 rounded-lg px-3 py-1.5 text-xs focus:outline-none focus:ring-2 focus:ring-blue-400 focus:border-transparent transition bg-gray-50 w-full sm:w-48"
               suppressHydrationWarning
             />
             <button
               onClick={fetchAssignments}
-              className="inline-flex items-center gap-1 text-xs bg-gray-100 hover:bg-gray-200 text-gray-600 px-3 py-1 rounded-lg transition"
+              className="inline-flex items-center gap-1 text-xs bg-gray-100 hover:bg-gray-200 text-gray-600 px-3 py-1.5 rounded-lg transition"
               disabled={fetchingAssignments}
             >
               <FaSyncAlt className={`w-3 h-3 ${fetchingAssignments ? 'animate-spin' : ''}`} />
-              {fetchingAssignments ? '...' : 'Refresh'}
+              {fetchingAssignments ? 'Refreshing...' : 'Refresh'}
             </button>
           </div>
         </div>
@@ -394,7 +394,7 @@ export default function AssignTickets() {
         <div className="bg-white rounded-lg shadow-sm border border-gray-100 overflow-hidden">
           <div className="overflow-x-auto max-h-[420px] overflow-y-auto">
             <table className="w-full text-xs">
-              <thead className="bg-gray-50/80 text-gray-500 uppercase tracking-wider sticky top-0 z-10 backdrop-blur-sm border-b border-gray-200">
+              <thead className="bg-gray-50/80 text-gray-500 uppercase tracking-wider sticky top-0 z-10 backdrop-blur-sm">
                 <tr>
                   <th className="px-3 py-2 text-left font-medium">Agent</th>
                   <th className="px-3 py-2 text-left font-medium">Code</th>
@@ -428,7 +428,7 @@ export default function AssignTickets() {
                       <td className="px-3 py-2 text-gray-700">Token {a.ticket_number}</td>
                       <td className="px-3 py-2 text-gray-700">{a.customer_name || '—'}</td>
                       <td className="px-3 py-2 text-gray-700">{a.customer_phone || '—'}</td>
-                      <td className="px-3 py-2 text-gray-500 text-xxs">{a.assigned_date}</td>
+                      <td className="px-3 py-2 text-gray-500 text-xs">{a.assigned_date}</td>
                       <td className="px-3 py-2 text-center">
                         <div className="flex items-center justify-center space-x-1">
                           <button
@@ -459,14 +459,14 @@ export default function AssignTickets() {
       {/* Edit Modal */}
       {editModalOpen && (
         <div className="fixed inset-0 bg-black/30 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-lg shadow-xl max-w-md w-full p-5 relative animate-fadeInUp">
+          <div className="bg-white rounded-xl shadow-xl max-w-md w-full p-6 relative animate-fadeInUp">
             <button
               onClick={closeEditModal}
               className="absolute top-3 right-3 text-gray-400 hover:text-gray-600 transition"
             >
               <FaTimes className="w-4 h-4" />
             </button>
-            <h2 className="text-base font-light text-gray-900 mb-1">Reassign Ticket</h2>
+            <h2 className="text-lg font-light text-gray-900 mb-1">Reassign Ticket</h2>
             <p className="text-xs text-gray-500 mb-4">
               Ticket <span className="font-medium text-gray-700">#{editingAssignment?.ticket_number}</span> from{' '}
               <span className="font-medium text-gray-700">{editingAssignment?.chit_name}</span>
@@ -479,7 +479,7 @@ export default function AssignTickets() {
                   New Agent
                 </label>
                 <select
-                  className="w-full border border-gray-200 rounded-lg px-3 py-1.5 text-xs focus:outline-none focus:ring-2 focus:ring-blue-400 focus:border-transparent transition bg-gray-50 appearance-none"
+                  className="w-full border border-gray-200 rounded-lg px-3 py-2 text-xs focus:outline-none focus:ring-2 focus:ring-blue-400 focus:border-transparent transition bg-gray-50 appearance-none"
                   value={editAgentId}
                   onChange={(e) => setEditAgentId(e.target.value)}
                   required
@@ -499,7 +499,7 @@ export default function AssignTickets() {
                 </label>
                 <input
                   type="text"
-                  className="w-full border border-gray-200 rounded-lg px-3 py-1.5 text-xs focus:outline-none focus:ring-2 focus:ring-blue-400 focus:border-transparent transition bg-gray-50"
+                  className="w-full border border-gray-200 rounded-lg px-3 py-2 text-xs focus:outline-none focus:ring-2 focus:ring-blue-400 focus:border-transparent transition bg-gray-50"
                   value={editCustomerName}
                   onChange={(e) => setEditCustomerName(e.target.value)}
                   suppressHydrationWarning
@@ -512,7 +512,7 @@ export default function AssignTickets() {
                 </label>
                 <input
                   type="text"
-                  className="w-full border border-gray-200 rounded-lg px-3 py-1.5 text-xs focus:outline-none focus:ring-2 focus:ring-blue-400 focus:border-transparent transition bg-gray-50"
+                  className="w-full border border-gray-200 rounded-lg px-3 py-2 text-xs focus:outline-none focus:ring-2 focus:ring-blue-400 focus:border-transparent transition bg-gray-50"
                   value={editCustomerPhone}
                   onChange={(e) => setEditCustomerPhone(e.target.value)}
                   suppressHydrationWarning
@@ -521,17 +521,17 @@ export default function AssignTickets() {
 
               {editError && <p className="text-red-600 text-xs">{editError}</p>}
 
-              <div className="flex space-x-3 pt-1">
+              <div className="flex space-x-3 pt-2">
                 <button
                   type="button"
                   onClick={closeEditModal}
-                  className="flex-1 bg-gray-100 hover:bg-gray-200 text-gray-700 text-xs font-medium px-4 py-1.5 rounded-lg transition"
+                  className="flex-1 bg-gray-100 hover:bg-gray-200 text-gray-700 text-xs font-medium px-3 py-2 rounded-lg transition"
                 >
                   Cancel
                 </button>
                 <button
                   type="submit"
-                  className="flex-1 bg-blue-600 hover:bg-blue-700 text-white text-xs font-medium px-4 py-1.5 rounded-lg transition shadow-sm disabled:opacity-60"
+                  className="flex-1 bg-blue-600 hover:bg-blue-700 text-white text-xs font-medium px-3 py-2 rounded-lg transition shadow-sm disabled:opacity-60"
                   disabled={editLoading}
                 >
                   {editLoading ? 'Reassigning...' : 'Reassign'}
@@ -541,20 +541,6 @@ export default function AssignTickets() {
           </div>
         </div>
       )}
-
-      <style jsx global>{`
-        @keyframes fadeInUp {
-          from { opacity: 0; transform: translateY(8px); }
-          to { opacity: 1; transform: translateY(0); }
-        }
-        .animate-fadeInUp {
-          animation: fadeInUp 0.2s ease-out;
-        }
-        .text-xxs {
-          font-size: 0.65rem;
-          line-height: 1rem;
-        }
-      `}</style>
     </div>
   );
 }
