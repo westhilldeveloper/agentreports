@@ -67,12 +67,17 @@ export async function GET(request) {
         }
       }
 
+      // ─── Clamp collected to non‑negative ──────────────────────
+      if (collected < 0) collected = 0;
+      if (pending < 0) pending = 0;
+
       const targetPerTicket = parseFloat(ticket.target_per_ticket) || 0;
       const openingBalance = parseFloat(ticket.opening_balance) || 0;
       const totalTarget = targetPerTicket + openingBalance;
 
-      // If there is no collection record, pending = totalTarget
-      const balance = pending > 0 ? pending : totalTarget - collected;
+      // ─── Compute balance = totalTarget - collected, clamp to 0 ──
+      let balance = totalTarget - collected;
+      if (balance < 0) balance = 0;
 
       formattedRows.push({
         date: collectionDate, // will be null if no collection
