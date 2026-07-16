@@ -70,6 +70,16 @@ export default function ReportsPage() {
     fetchReport();
   }, [selectedAgentId, selectedChitId, selectedMonth]);
 
+  // Helper to format date (handles null)
+  const formatDate = (dateStr) => {
+    if (!dateStr) return '—';
+    try {
+      return new Date(dateStr).toLocaleDateString('en-GB');
+    } catch {
+      return '—';
+    }
+  };
+
   // Export to Excel
   const exportExcel = () => {
     if (reportData.length === 0) {
@@ -77,7 +87,7 @@ export default function ReportsPage() {
       return;
     }
     const wsData = reportData.map((row) => ({
-      Date: new Date(row.date).toLocaleDateString('en-GB'),
+      Date: row.date ? new Date(row.date).toLocaleDateString('en-GB') : '—',
       Agent: row.agent_name,
       'Agent Code': row.agent_code,
       Chit: row.chit_name,
@@ -118,7 +128,7 @@ export default function ReportsPage() {
     doc.text(filterText, pageWidth / 2, 22, { align: 'center' });
 
     const tableData = reportData.map((row) => [
-      new Date(row.date).toLocaleDateString('en-GB'),
+      row.date ? new Date(row.date).toLocaleDateString('en-GB') : '—',
       row.agent_name,
       row.agent_code,
       row.chit_name,
@@ -325,7 +335,7 @@ export default function ReportsPage() {
                   reportData.map((row, idx) => (
                     <tr key={idx} className="hover:bg-gray-50 transition">
                       <td className="px-4 py-2.5 text-gray-700">
-                        {new Date(row.date).toLocaleDateString('en-GB')}
+                        {formatDate(row.date)}
                       </td>
                       <td className="px-4 py-2.5 font-medium text-gray-800">{row.agent_name}</td>
                       <td className="px-4 py-2.5 text-gray-600">{row.agent_code}</td>
